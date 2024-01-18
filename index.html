@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" spellcheck="false" autocapitalize="none">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Picfunk</title>
+	<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAkUExURUdwTAAAwf///8EAAKIAAAAAogAAAMEAwWQAAIMAg6IAokUAAC1PI8kAAAABdFJOUwBA5thmAAAAaElEQVQoz53QUQ3AMAhFUSzMAhawgIVZqAUsYKEWsDBzg61p9tGXLbufJ6QpEF3tM0Kwjf6C8Z0ZhlalvEDjvgTNuOYxiMgneDyKgbnXgRDUctHrmxD8iDAMmasZBvFMx73XUGGYATgBaX5tLboOXbQAAAAASUVORK5CYII=" />
+	<style>
+		html,body{height:100%}body{
+			--a: #fff; --b: #000; --bt: #0006; --at: #fff6; --at2: #fff0;
+			--fb: brightness(0);
+			margin: 0;
+			background: var(--a); color: var(--b);
+			overscroll-behavior: none;
+			user-select: none;
+			font-family: AnkaCoder, Menlo, monospace;
+			--h: min(calc(62.5vw - 110px), calc(50vh - 8px));
+		}
+		@media(prefers-color-scheme:dark){body{--a:#000;--b:#fff;--at:#0006;--at2:#0000;--bt: #fff6;--fb:brightness(2)}}
+		*{
+			box-sizing:border-box;
+			-webkit-tap-highlight-color:#0000;
+			font-size-adjust: none;
+		}
+		input::-webkit-outer-spin-button,
+		input::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+		}
+		input[type=number]{ -moz-appearance: textfield; appearance: textfield }
+		#sources{
+			width: 176px; height: 100%;
+			position: fixed;
+			top: 0; left: 0;
+			background: #8882;
+			padding: 8px;
+			overflow-y: scroll;
+		}
+		::-webkit-scrollbar{
+			display: none;
+		}
+		.tex{
+			width: 160px; height: 160px;
+			position: relative;
+			margin-bottom: 8px;
+		}
+		.tex > img{
+			width: 100%; height: 100%;
+			object-fit: cover;
+		}
+		.tex > input{
+			background: #0000;
+			color: inherit; border: none; outline: none;
+			font: inherit;
+			position: absolute;
+			bottom: 0; left: 0;
+			background: var(--at);
+			width: 160px;
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.tex > .del{
+			position: absolute;
+			top: -2px; right: 6px;
+			color: black;
+			font: bold 20px Arial;
+			-webkit-text-stroke: 4px black;
+			cursor: pointer;
+		}
+		.tex > .dim{
+			position: absolute;
+			top: 2px; left: 2px;
+			cursor: pointer;
+			text-shadow: 0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a);
+		}
+		.tex > .del:after{
+			content: 'x';
+			color: red;
+			-webkit-text-stroke: 0;
+			position: absolute;
+			left: 0;
+		}
+		#canvas{
+			position: absolute;
+			top: 0; right: 0; width: calc(100% - 176px);
+			height: var(--h);
+			object-fit: contain;
+			cursor: crosshair;
+			background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAQMAAACQp+OdAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAGUExURYaGhkdwTL6aDdcAAAACdFJOUyYAtU1OHAAAABZJREFUKM9j+A8EDCAwysDKGA0IvAwA8wL/ASorPGcAAAAASUVORK5CYII=) 0/32px;
+			animation: T 5s ease-in-out alternate infinite;
+		}
+		@keyframes T{
+			0%{ background-position: 0 0 }
+			100%{  background-position: 160px -80px }
+		}
+		#info{
+			height: 50px; position: absolute;
+			background: linear-gradient(to bottom, var(--at2), var(--a));
+			top: calc(var(--h) - 50px);
+			right: 0; width: calc(100% - 176px);
+			padding: 10px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+		#info input{
+			background: #0000;
+			color: inherit; border: none; outline: none;
+			font: inherit;
+			width: 60px;
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		#info > #fs, #info > #download, #info > #copy{
+			height: 20px;
+			filter: var(--fb);
+			cursor: pointer;
+		}
+		#canvas:fullscreen{
+			cursor: none;
+		}
+		::selection{
+			background: #80808080;
+			/*color: var(--b);*/
+		}
+		#editor{
+			overflow-y: scroll;
+			position: absolute;
+			bottom: 0; right: 0;
+			width: calc(100% - 176px);
+			background: #8881;
+			height: calc(100% - var(--h) - 16px);
+		}
+		#txt, #txt1{
+			width: 100%; position: relative;
+			min-height: 100%;
+			font-size: 16px;
+			line-height: 20px;
+			white-space: pre-wrap;
+			line-height: 1.4em;
+			tab-size: 3;
+			padding: 8px 0 8px 16px;
+			color: #f00;
+		}
+		#txt1{
+			min-height: unset;
+			background-color: #8883;
+		}
+		#input{
+			z-index: 1; position: absolute;
+			padding: inherit; margin: 0;
+			top: 0; left: 0;
+			width: 100%; height: 100%;
+			border: none; outline: none;
+			background: none;
+			font: inherit;
+			color: #0000;
+			resize: none;
+			caret-color: var(--b);
+			line-height: inherit;
+			white-space: pre-wrap;
+			line-height: inherit;
+			tab-size: inherit;
+		}
+		#resize{
+			position: absolute;
+			top: var(--h); right: 0;
+			width: calc(100% - 176px);
+			height: 16px; border: 2px var(--b) solid;
+			opacity: 0.5;
+			text-align: center;
+			cursor: ns-resize;
+			line-height: 14px;
+		}
+		#txt > err:after{
+			content: attr(data-c);
+			cursor: none;
+			background: #f00;
+			color: var(--b);
+			position: absolute;
+			left: 0;
+			width: 13px;
+			cursor: pointer;
+			padding: 0 2px;
+			box-sizing: border-box;
+			z-index: 3;
+		}
+		#txt > err:hover:after{
+			content: attr(data-t);
+			background: #f00;
+			position: absolute;
+			left: 0;
+			width: 100%;
+			cursor: pointer;
+		}
+		#txt:after, #txt2:after{content: '.'; font-size: 0;}
+		.types{ color: #e45 }
+		.storage{ color: #d00 }
+		.keyword{ color: #e52 }
+		.macro{ color: #c84 }
+		.int{ color: #25e }
+		.float{ color: #52e }
+		.id{ color: var(--b); opacity: 0.8 }
+		.symbols{ color: var(--b) }
+		.symbols2{ color: var(--b); opacity: 0.6 }
+		.comment{ color: var(--b); opacity: 0.3 }
+
+		#logo{
+			background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAkUExURUdwTAAAwf///8EAAKIAAAAAogAAAMEAwWQAAIMAg6IAokUAAC1PI8kAAAABdFJOUwBA5thmAAAAaElEQVQoz53QUQ3AMAhFUSzMAhawgIVZqAUsYKEWsDBzg61p9tGXLbufJ6QpEF3tM0Kwjf6C8Z0ZhlalvEDjvgTNuOYxiMgneDyKgbnXgRDUctHrmxD8iDAMmasZBvFMx73XUGGYATgBaX5tLboOXbQAAAAASUVORK5CYII=) 0/32px no-repeat;
+			height: 32px;
+			margin: 5px 0 10px;
+			font-size: 24px;
+			padding: 4px 0 0 26px;
+		}
+	</style>
+</head>
+<pre style="display:none;visibility:hidden;">
+	<input type="file" id="uploadinput">
+	<div class="tex">
+		<img src />
+		<input /> <span class="del">x</span>
+		<span class="dim" title="Use this size"></span>
+	</div>
+</pre>
+<body>
+	<div id="sources">
+		<div id="logo">icfunk</div>
+		<img id="upload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAACNJREFUGFdjZMACGGFiHR0d/ysqKsB8MAESgEmCJHCrRDcWAGuODAaFTh0eAAAAAElFTkSuQmCC" style="cursor:pointer;margin-bottom:50px;width:160px;image-rendering: pixelated;" />
+	</div>
+	<canvas id="canvas"></canvas>
+	<div id="info">
+		<span style="border-bottom:1.5px var(--b) solid;"><input type="number" min="1" id="w" placeholder="100" />x<input type="number" min="1" id="h" placeholder="100" /></span>
+		<div style="flex-grow: 1;"></div>
+		<span id="mspf" style="font-style:italic;opacity:0.5">draw: ---</span>
+		<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
+		<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">
+		<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
+	</div>
+	<div id="editor">
+		<div id="txt1"></div>
+		<div id="txt"><textarea id="input"></textarea></div>
+	</div>
+	<div id="resize">=</div>
+</body>
+<script src="index.js"></script>
+</html>
