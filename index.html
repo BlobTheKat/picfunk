@@ -9,6 +9,10 @@
 	<meta name="og:description" content="GLSL image editor!" />
 	<meta name="og:image" content="https://picfunk.art/icon.png" />
 	<style>
+		@font-face {
+			font-family: AnkaCoer;
+			src: url(./AnkaCoder.ttf);
+		}
 		html,body{height:100%}body{
 			--a: #fff; --b: #000; --bt: #0006; --at: #fff6; --at2: #fff0;
 			--fb: brightness(0);
@@ -215,10 +219,17 @@
 		#logo{
 			background: url(./icon.png) 0/32px no-repeat;
 			height: 32px;
-			margin: 5px 0 10px;
+			margin: 5px 0;
 			font-size: 24px;
 			padding: 4px 0 0 26px;
 		}
+		#brand{
+			text-align: center;
+			margin-bottom: 10px;
+			font-family: Arial, Helvetica, sans-serif;
+			font-weight: bold;
+		}
+		#brand a{color:#05f}
 	</style>
 </head>
 <pre style="display:none;visibility:hidden;">
@@ -232,6 +243,7 @@
 <body>
 	<div id="sources">
 		<div id="logo">icfunk</div>
+		<div id="brand"><a href="https://github.com/BlobTheKat/picfunk">Github</a> &bullet; <a href="https://ko-fi.com/blobbybot">Leave a tip</a></div>
 		<img id="upload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAACNJREFUGFdjZMACGGFiHR0d/ysqKsB8MAESgEmCJHCrRDcWAGuODAaFTh0eAAAAAElFTkSuQmCC" style="cursor:pointer;margin-bottom:50px;width:160px;image-rendering: pixelated;" />
 	</div>
 	<canvas id="canvas"></canvas>
