@@ -225,21 +225,21 @@ function draw(_time){
 onbeforeunload = () => true
 const input = $('#input'), highlighted = $('#txt')
 input.onchange = code
-input.onkeydown = e => {
-	if(e.keyCode === 13 && e.shiftKey) code()
-	else if(e.keyCode === 9){
+input.onkeydown = ev => {
+	if(ev.keyCode === 13 && ev.shiftKey) code()
+	else if(ev.keyCode === 9){
 		const s = input.selectionStart, e = input.selectionEnd, v = input.value
 		if(s === e){
 			input.value = v.slice(0, s)+'\t'+v.slice(s)
 			input.selectionStart = input.selectionEnd = s+1
 		}else{
-			if(e.shiftKey) input.value = v.slice(0, s)+v.slice(s,e).replace(/\n\t/g,'\n')+v.slice(e)
+			if(ev.shiftKey) input.value = v.slice(0, s)+v.slice(s,e).replace(/\n\t/g,'\n')+v.slice(e)
 			else input.value = v.slice(0, s)+v.slice(s,e).replace(/\n/g,'\n\t')+v.slice(e)
 			input.selectionStart = s; input.selectionEnd = e+input.value.length-v.length
 		}
 		input.oninput()
 	}else return
-	e.preventDefault()
+	ev.preventDefault()
 }
 input.value = `// Scroll up for docs
 
