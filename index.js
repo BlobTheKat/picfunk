@@ -138,7 +138,14 @@ function code(){
 #define getSize(a) (textureSize(a,0))
 #define tex sampler2D
 #define coords (ivec2(gl_FragCoord.xy))
-precision mediump float;uniform float t;uniform ivec2 size;${images.size?'struct _TexturesType{sampler2D '+[...images.keys()]+';};uniform _TexturesType images;':''}in vec2 pos;out vec4 color;const float PI=3.141592653589793,E=2.718281828459045;
+precision mediump float;
+uniform float t;
+uniform ivec2 size;
+${images.size?'struct _TexturesType{sampler2D '+[...images.keys()]+';};uniform _TexturesType images;':''}
+in vec2 pos;
+out vec4 color;
+const float PI=3.141592653589793, E=2.718281828459045;
+#line 1
 `+input.value)
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
@@ -151,7 +158,7 @@ precision mediump float;uniform float t;uniform ivec2 size;${images.size?'struct
 			if(e.startsWith('ERROR:')){
 				e = e.slice(6)
 				const w = e.indexOf(':'), i = e.indexOf(':', w+1)
-				const idx = arr[e.slice(w+1, i)-7]; e = e.slice(i+1)
+				const idx = arr[e.slice(w+1, i)]; e = e.slice(i+1)
 				let L = ch[j].textContent.length
 				while(j<ch.length-1&&c+L<=idx) c+=L,L=ch[++j].textContent.length
 				makeError(e, ch[j])
@@ -259,8 +266,8 @@ const tokens = Object.entries({
 	int: /(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi,
 	float: /(\d+\.\d*|\.\d+)(e\d+)?f?/yi,
 	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|tex|void)(?!\w)/y,
-	keyword: /(if|else|while|for)(?!\w)/y,
-	storage: /(precision (lowp|mediump|highp)|const|in|out|inout|uniform|struct)(?!\w)/y,
+	keyword: /(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y,
+	storage: /(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y,
 	symbols: /[()[\]!%^&*:<>,/?|~\-=+]+/y,
 	symbols2: /[;.{}]/y,
 	id: /\w+/y,
