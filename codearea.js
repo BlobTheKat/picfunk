@@ -9,7 +9,7 @@ sheet.insertRule('err:after{content:attr(data-c);background:#f00;color:white;pos
 sheet.insertRule('err:hover:after{content:attr(data-t);width:100%}',3)
 customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaElement extends HTMLElement{
 	static observedAttributes = ['value']
-	#patterns = []
+	#patterns = new Map
 	#textarea = document.createElement('textarea')
 	#errors = []
 	#codeScheduled = 0
@@ -65,8 +65,8 @@ customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaEl
 		if(this.#sh) this.#textarea.oninput()
 		this.compile()
 	}
-  constructor() {
-    super()
+	constructor() {
+		super()
 		this.#textarea.spellcheck = false
 		this.#textarea.onchange = this.compile
 		this.#textarea.onkeydown = ev => {
@@ -101,9 +101,10 @@ customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaEl
 			if(j==count)i -= L, l += L,j>1&&j--
 			e = 0
 			const v = this.#textarea.value; let inv = 0
+			let state = 'default', pat = this.#patterns.get(state) || []
 			t: while(i+inv < v.length){
-				for(let q = 0; q < this.#patterns.length; q+=2){
-					const r = this.#patterns[q], k = this.#patterns[q+1]
+				for(let q = 1; q < pat.length; q+=3){
+					const r = pat[q]
 					r.lastIndex = i+inv
 					if(!r.test(v)) continue
 					const len = r.lastIndex-i
@@ -115,13 +116,16 @@ customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaEl
 					}
 					if(inv){
 						const n = document.createElement('span')
+						n.classList.add(pat[0])
 						n.textContent = v.slice(i, i+inv)
 						this.#sh.insertBefore(n, c); j++
 					}
 					const n = document.createElement('span')
-					n.classList.add(k)
+					n.classList.add(pat[q+1])
 					n.textContent = v.slice(i+inv, i += len)
 					this.#sh.insertBefore(n, c); j++
+					const s = pat[q+2]
+					if(typeof s == 'string') pat = this.#patterns.get(state = s) || ['c']
 					inv = 0
 					if(l<=0&&!e) return
 					continue t
@@ -136,7 +140,7 @@ customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaEl
 			}
 			this.#os = this.#textarea.selectionStart; this.#oe = this.#textarea.selectionEnd
 		}
-  }
+	}
 	attributeChangedCallback(n, o, v){
 		if(n != 'value') return
 		this.value = v
@@ -152,10 +156,36 @@ customElements.define('code-area', globalThis.CodeAreaElement = class CodeAreaEl
 		this.#sh.remove()
 		this.#sh = null
 	}
-	addPattern(regex, style){
-		if(!regex.flags.includes('y')) regex = new RegExp(regex.source, regex.flags+'y')
-		let cl = style[0] == '.' ? style.slice(1) : styles.get(style)
-		if(cl === undefined) styles.set(style, cl = 'c'+styles.size), sheet.insertRule(`.${cl}{${style}}`, 4)
-		this.#patterns.push(regex, cl)
+	setPatterns(obj){
+		this.#patterns.clear()
+		if(Array.isArray(obj)) obj = {default: obj}
+		else if(!obj) return
+		for(const s in obj){
+			const arr = ['']
+			this.#patterns.set(s, arr)
+			for(const e of obj[s]){
+				if(typeof e == 'string' || !e[0]){
+					let cl = typeof style == 'string' ?
+					style[0] == '.' ? style.slice(1) : styles.get(style)
+					: typeof style == 'object' ? styleToStr(style) : undefined
+					if(cl === undefined) styles.set(style, cl = 'c'+styles.size), sheet.insertRule(`.${cl}{${style}}`, 4)
+					arr[0] = cl
+				}
+				const {0: regex, 1: style, 2: setState} = e
+				if(typeof regex == 'string') regex = new RegExp(regex, 'y')
+				if(!regex.flags.includes('y')) regex = new RegExp(regex.source, regex.flags+'y')
+				let cl = typeof style == 'string' ?
+					style[0] == '.' ? style.slice(1) : styles.get(style)
+				: typeof style == 'object' ? styleToStr(style) : undefined
+				if(cl === undefined) styles.set(style, cl = 'c'+styles.size), sheet.insertRule(`.${cl}{${style}}`, 4)
+				arr.push(regex, style, setState)
+			}
+		}
+		if(this.#sh) this.#textarea.oninput()
 	}
-})}
+})
+let n; function styleToStr(s){
+	n = n||document.createElement('p')
+	Object.assign(n.style, s)
+	return (s=n.getAttribute('style'),n.style='',s)
+}}
