@@ -27,7 +27,7 @@
 		cancelCompile(){
 			if(this.#codeScheduled < 0) return
 			cancelAnimationFrame(this.#codeScheduled)
-			this.#codeScheduled = -1
+			this.#codeScheduled = 0
 		}
 		oncompile = null
 		#makeError(err,c){
@@ -58,6 +58,7 @@
 		#code(){
 			for(const e of this.#errors) e.remove()
 			this.#errors.length = 0
+			this.#codeScheduled = 0
 			this.oncompile?.call(this, this.#textarea.value)
 		}
 		get disabled(){ return this.#textarea.disabled }
@@ -73,7 +74,7 @@
 			this.#textarea.spellcheck = false
 			this.#textarea.onchange = this.compile
 			this.#textarea.onkeydown = ev => {
-				if(ev.keyCode === 13 && ev.shiftKey) this.#code()
+				if(ev.keyCode === 13 && ev.shiftKey){ if(!this.#codeScheduled) this.#code() }
 				else if(ev.keyCode === 9){
 					const s = this.#textarea.selectionStart, e = this.#textarea.selectionEnd, v = this.#textarea.value
 					if(s === e){
