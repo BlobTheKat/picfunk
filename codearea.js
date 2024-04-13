@@ -1,5 +1,5 @@
 {const styles = new Map(), sheet = new CSSStyleSheet(), gsheet = new CSSStyleSheet()
-	gsheet.insertRule('code-area{user-select:none !important;-webkit-user-select:none !important;position:relative !important;tab-size:2;box-sizing:border-box !important;-webkit-tap-highlight-color:#0000 !important;font-size-adjust: none !important;touch-action: pan-y !important;display:block !important;white-space:pre-wrap !important;font-family:monospace;overflow-wrap:break-word}', 0)
+	gsheet.insertRule('code-area{user-select:none !important;-webkit-user-select:none !important;position:relative !important;tab-size:2;box-sizing:border-box !important;-webkit-tap-highlight-color:#0000 !important;font-size-adjust: none !important;touch-action: pan-y !important;display:block !important;white-space:pre-wrap !important;font-family:monospace;overflow-wrap:break-word;overflow:auto}', 0)
 	gsheet.insertRule('code-area:after{content:"" !important;height:0 !important;display:inline-block !important}', 1)
 	gsheet.insertRule('code-area::-webkit-scrollbar{display: none;}',2)
 	document.adoptedStyleSheets.push(gsheet)
@@ -153,6 +153,7 @@
 					n.textContent = v.slice(i)
 					this.#sh.append(n)
 				}
+				this.#textarea.style.width = this.#textarea.style.height = 0
 				this.#textarea.style.width = this.scrollWidth+'px'
 				this.#textarea.style.height = this.scrollHeight+'px'
 			}
