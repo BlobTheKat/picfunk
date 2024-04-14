@@ -150,8 +150,11 @@
 						const s = pat[q+2]
 						if(typeof s == 'string') pat = this.#patterns.get(state = s)
 						inv = 0
-						if(!l&&(!c||state==c.state)){
-
+						if(!l&&(!c||state==c.state){
+							this.#textarea.style.width = this.#textarea.style.height = 0
+							this.#textarea.style.width = this.scrollWidth+'px'
+							this.#textarea.style.height = this.scrollHeight+'px'
+							return
 						}
 						continue t
 					}
