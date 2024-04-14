@@ -4,7 +4,7 @@
 	gsheet.insertRule('code-area:after{content:"" !important;height:0 !important;display:inline-block !important}', 1)
 	gsheet.insertRule('code-area::-webkit-scrollbar{display: none;}',2)
 	document.adoptedStyleSheets.push(gsheet)
-	sheet.insertRule('textarea{z-index:1;position:absolute;padding:inherit;margin:0;top:0;left:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#888;line-height:inherit;white-space:pre-wrap;line-height:inherit;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;font-size-adjust:none;touch-action:pan-y;overflow-wrap:inherit;overflow:clip}', 0)
+	sheet.insertRule('textarea{z-index:1;position:absolute;padding:inherit;margin:0;top:0;left:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#888;white-space:pre-wrap;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;font-size-adjust:none;touch-action:pan-y;overflow-wrap:inherit;overflow:clip}', 0)
 	sheet.insertRule('::selection{background: #80808080}',1)
 	sheet.insertRule('err:after{content:attr(data-c);background:#f00;color:white;position:absolute;left:0;width:13px;cursor:pointer;padding:0 2px;box-sizing:border-box;z-index:3}',2)
 	sheet.insertRule('err:hover:after{content:attr(data-t);width:100%}',3)
@@ -184,7 +184,7 @@
 			else if(n == 'value') this.value = v
 		}
 		connectedCallback(){
-			this.#sh = this.attachShadow({mode: 'closed'})
+			this.#sh = this.attachShadow({mode: 'open'})
 			this.#sh.adoptedStyleSheets.push(sheet)
 			this.#sh.appendChild(this.#textarea)
 			this.#textarea.oninput()
