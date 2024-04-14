@@ -160,10 +160,18 @@
 					}
 					inv++
 				}
+				let c = ch[j]; l += inv
+				while(c && l > 0){
+					l -= c.textContent.length
+					c.remove()
+					c = ch[j]
+				}
 				if(i<v.length){
 					const n = document.createElement('span')
+					if(pat[0]) n.classList.add(pat[0])
+					n.state = state
 					n.textContent = v.slice(i)
-					this.#sh.append(n)
+					this.#sh.insertBefore(n, c)
 				}
 				this.#textarea.style.width = this.#textarea.style.height = 0
 				this.#textarea.style.width = this.scrollWidth+'px'
