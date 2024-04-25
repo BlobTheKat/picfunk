@@ -104,7 +104,7 @@ precision mediump float;
 out vec2 pos;
 uniform ivec2 size;
 void main(){
-	pos = vec2(float(gl_VertexID&1),float(gl_VertexID>>1));
+	pos = vec2(float(gl_VertexID&1),float((gl_VertexID>>1)&1));
 	gl_Position = vec4(pos*2.-1.,0.,1.);
 }
 `)
@@ -203,11 +203,13 @@ const {TIME_ELAPSED_EXT=0} = gl.getExtension('EXT_disjoint_timer_query_webgl2')?
 const mspf = $('#mspf')
 let mspfAvg = 0
 function drawTime(dt){
+	if(dt > 184400) return
 	mspfAvg += (dt-mspfAvg)/30
 	mspf.textContent = 'draw: '+mspfAvg.toFixed(2)+'ms'
 }
 let c = null
 let raf = -1
+let overdraw = 0
 function draw(_time){
 	if(errors.length) return
 	gl.uniform2i(gl.getUniformLocation(p, 'size'), gl.canvas.width, gl.canvas.height)
@@ -218,7 +220,7 @@ function draw(_time){
 			drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
 	}
 	if(TIME_ELAPSED_EXT) gl.beginQuery(TIME_ELAPSED_EXT, q)
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 6)
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
 	if(TIME_ELAPSED_EXT) gl.endQuery(TIME_ELAPSED_EXT)
 	if(!tLoc){
 		if(!c) c=document.createElement('canvas').getContext('2d'),c.canvas.width=c.canvas.height=1
