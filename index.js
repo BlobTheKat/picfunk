@@ -102,7 +102,6 @@ const fsh = gl.createShader(gl.FRAGMENT_SHADER)
 gl.shaderSource(vsh, `#version 300 es
 precision mediump float;
 out vec2 pos;
-uniform ivec2 size;
 void main(){
 	pos = vec2(float(gl_VertexID&1),float((gl_VertexID>>1)&1));
 	gl_Position = vec4(pos*2.-1.,0.,1.);
