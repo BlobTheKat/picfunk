@@ -214,7 +214,7 @@ function draw(_time){
 	if(tLoc){
 		raf = requestAnimationFrame(draw)
 		gl.uniform1f(tLoc, (performance.now()-tOrigin)/1000)
-		if(typeof _time === 'number' && gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))
+		if(typeof _time === 'number' && TIME_ELAPSED_EXT && gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))
 			drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
 	}
 	if(TIME_ELAPSED_EXT) gl.beginQuery(TIME_ELAPSED_EXT, q)
@@ -223,7 +223,7 @@ function draw(_time){
 	if(!tLoc){
 		if(!c) c=document.createElement('canvas').getContext('2d'),c.canvas.width=c.canvas.height=1
 		c.drawImage(gl.canvas, 0, 0)
-		setTimeout(() => {
+		if(TIME_ELAPSED_EXT) requestAnimationFrame(() => {
 			if(gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))
 				drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
 		})
@@ -418,4 +418,4 @@ out vec4 color;`; let inv = 0, i = 0
 	}
 }
 
-$('#editor').scrollTo(0, 1e10)
+$('#editor').scrollTo(0, 1e9)
