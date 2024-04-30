@@ -195,7 +195,6 @@ function setsize(w, h){
 	gl.viewport(0, 0, w, h)
 	panelH = Math.round(Math.min(h/w*(document.body.offsetWidth-176), document.body.offsetHeight/2-8))
 	document.body.style.setProperty('--h', panelH+'px')
-	draw()
 }
 const q = gl.createQuery()
 const {TIME_ELAPSED_EXT=0} = gl.getExtension('EXT_disjoint_timer_query_webgl2')??0
@@ -340,8 +339,8 @@ iW.oninput = iH.oninput = function(){
 	this.style.maxWidth = 0
 	this.style.maxWidth = this.scrollWidth+'px'
 }
-iW.onchange = () => setsize(iW.value, gl.canvas.height)
-iH.onchange = () => setsize(gl.canvas.width, iH.value)
+iW.onchange = () => (setsize(iW.value, gl.canvas.height),draw())
+iH.onchange = () => (setsize(gl.canvas.width, iH.value),draw())
 iW.value = iH.value = 200
 iW.oninput(); iH.oninput()
 
