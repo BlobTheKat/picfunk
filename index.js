@@ -101,10 +101,10 @@ const vsh = gl.createShader(gl.VERTEX_SHADER)
 const fsh = gl.createShader(gl.FRAGMENT_SHADER)
 gl.shaderSource(vsh, `#version 300 es
 precision mediump float;
-out vec2 pos;
+out vec2 GL_uv;
 void main(){
-	pos = vec2(float(gl_VertexID&1),float((gl_VertexID>>1)&1));
-	gl_Position = vec4(pos*2.-1.,0.,1.);
+	GL_uv = vec2(float(gl_VertexID&1),float((gl_VertexID>>1)&1));
+	gl_Position = vec4(GL_uv*2.-1.,0.,1.);
 }
 `)
 gl.compileShader(vsh)
@@ -132,18 +132,20 @@ function code(){
 	cancelAnimationFrame(raf)
 	errors.length = 0
 	gl.shaderSource(fsh, `#version 300 es
-#define getColor(a,b) (texture(a, b))
-#define getPixel(a,b) (texelFetch(a, b, 0))
+#define getColor(a,b) (texture(a,b))
+#define getPixel(a,b) (texelFetch(a,b,0))
 #define getSize(a) (textureSize(a,0))
-#define tex sampler2D
-#define coords (ivec2(gl_FragCoord.xy))
+#define img sampler2D
 precision mediump float;
 uniform float t;
 uniform ivec2 size;
 ${images.size?'struct _TexturesType{sampler2D '+[...images.keys()]+';};uniform _TexturesType images;':''}
-in vec2 pos;
-out vec4 color;
-const float PI=3.141592653589793, E=2.718281828459045;
+in vec2 GL_uv;
+out vec4 GL_col;
+const float PI=3.141592653589793,E=2.718281828459045,SQRT2=1.4142135623730951;
+vec4 GL_main(vec2);
+void main(){GL_col=GL_main(GL_uv);}
+#define main GL_main
 #line 1
 `+input.value)
 	gl.compileShader(fsh)
@@ -177,7 +179,7 @@ const float PI=3.141592653589793, E=2.718281828459045;
 		}
 		if(errors.length)return
 	}
-	tLoc = gl.getUniformLocation(p, 't')
+	tLoc = gl.getUniformLocation(p, 'GL_t')
 	tOrigin = performance.now()
 	for(const {0:k,1:t} of images){
 		const loc = gl.getUniformLocation(p, 'images.'+k)
@@ -250,22 +252,23 @@ input.onkeydown = ev => {
 }
 input.value = `// Scroll up for docs
 
-void main(){
+vec4 main(vec2 uv){
 	// Try editing this
-	color = getPixel(images.creo, coords);
+	vec4 color = getColor(images.creo, uv);
 	// Replace *= with = to see the original gradient
-	color *= vec4(pos.x, pos.x*pos.y*1.5, pos.y, 1);
-	// Try uploading an image and using getColor(images.<<your_image>>, pos); after the *=
+	color *= vec4(uv.x, uv.x*uv.y*1.5, uv.y, 1);
+	// Try uploading an image and using getColor(images.<<your_image>>, uv); after the *=
 \t
 	// Uncomment this line for fun
 	//color += vec4(0.8) * pow(mod(-t,0.667),2.0);
+	return color;
 }`
 const tokens = Object.entries({
 	comment: /\/\/.*|\/\*([^*]|\*[^\/])*(\*\/|$)/y,
 	macro: /(^|\n)#[^\n]+/y,
 	int: /(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi,
 	float: /(\d+\.\d*|\.\d+)(e\d+)?f?/yi,
-	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|tex|void)(?!\w)/y,
+	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|img|void)(?!\w)/y,
 	keyword: /(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y,
 	storage: /(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y,
 	symbols: /[()[\]!%^&*:<>,/?|~\-=+]+/y,
@@ -373,29 +376,23 @@ onkeydown = e => {
 	const v = `#version 300 es
 precision mediump float;
 
-#define tex sampler2D
+#define img sampler2D
 const float PI = 3.141592653589793;
 const float E = 2.718281828459045;
+const float SQRT2 = 1.4142135623730951;
 
 // Get color at a position between (0,0) and (1,1) (corresponding to bottom-left and top-right of the texture). Linear interpolation applies
-vec4 getColor(tex img, vec2 pos); // -> texture(...)
+vec4 getColor(img image, vec2 pos); // -> texture(...)
 // Get the pixel at an ivec2 coordinate of the image between (0,0) and (img_width, img_height). No sampling / interpolation is done
-vec4 getPixel(tex img, ivec2 coord) // -> texelFetch(..., 0)
+vec4 getPixel(img image, ivec2 coord) // -> texelFetch(..., 0)
 // Get the size of a texture
-vec2 getSize(tex img) // -> textureSize(...,0)
-
-// Time elapsed in seconds
-uniform float t;
+vec2 getSize(img image) // -> textureSize(...,0)
 // Output size
 uniform ivec2 size;
 // Struct of all images (address using images.<img_name>)
 uniform struct images;
-// Integer coordinates of the current pixel between (0,0) and (output_width, output_height)
-in ivec2 coords;
-// Current coordinates between (0,0) and (1,1)
-in vec2 pos;
-// Color to draw at current coordinates
-out vec4 color;`; let inv = 0, i = 0
+
+void main(){gl_FragColor = main(gl_FragCoord.xy / vec2(size));}`; let inv = 0, i = 0
 	const highlighted1 = $('#txt1')
 	t: while(i+inv < v.length){
 		for(const {0:k,1:r} of tokens){
