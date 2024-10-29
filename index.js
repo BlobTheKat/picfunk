@@ -139,7 +139,7 @@ function code(){
 precision mediump float;
 uniform float t;
 uniform ivec2 size;
-${images.size?'struct _TexturesType{sampler2D '+[...images.keys()]+';};uniform _TexturesType images;':''}
+${images.size?'struct GL_TexturesType{sampler2D '+[...images.keys()]+';};uniform GL_TexturesType images;':''}
 in vec2 GL_uv;
 out vec4 GL_col;
 const float PI=3.141592653589793,E=2.718281828459045,SQRT2=1.4142135623730951;
@@ -179,7 +179,7 @@ void main(){GL_col=GL_main(GL_uv);}
 		}
 		if(errors.length)return
 	}
-	tLoc = gl.getUniformLocation(p, 'GL_t')
+	tLoc = gl.getUniformLocation(p, 't')
 	tOrigin = performance.now()
 	for(const {0:k,1:t} of images){
 		const loc = gl.getUniformLocation(p, 'images.'+k)
