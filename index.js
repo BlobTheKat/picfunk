@@ -117,12 +117,12 @@ let errors = []
 function makeError(err,c){
 	const p = c?c.previousElementSibling:highlighted.lastElementChild
 	if(p && p.dataset.c){
-		//p.dataset.c = Math.min(p.dataset.c - -1,9)
-		//p.dataset.t += '\n'+err.trim()
+		p.dataset.c = Math.min((+p.dataset.c||1) + 1,9)
+		p.dataset.t += '\n'+err.trim()
 		return
 	}
 	const n = document.createElement('err')
-	n.dataset.c = '!'//1
+	n.dataset.c = '!'
 	n.dataset.t = err.trim()
 	highlighted.insertBefore(n, c)
 	errors.push(n)
@@ -146,7 +146,7 @@ const float PI=3.141592653589793,E=2.718281828459045,SQRT2=1.4142135623730951;
 vec4 GL_main(vec2);
 void main(){GL_col=GL_main(GL_uv);}
 #define main GL_main
-#line 1
+#line 0
 `+input.value)
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
