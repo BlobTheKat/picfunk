@@ -146,7 +146,7 @@ const float PI=3.141592653589793,E=2.718281828459045,SQRT2=1.4142135623730951;
 vec4 GL_main(vec2);
 void main(){GL_col=GL_main(GL_uv);}
 #define main GL_main
-#line 0
+#line 1
 `+input.value)
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
