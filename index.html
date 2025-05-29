@@ -10,7 +10,7 @@
 	<meta name="og:image" content="https://picfunk.art/icon.png" />
 	<style>
 		@font-face {
-			font-family: AnkaCoer;
+			font-family: AnkaCoder;
 			src: url(./AnkaCoder.ttf);
 		}
 		html,body{height:100%}body{
@@ -35,7 +35,6 @@
 			-webkit-appearance: none;
 			margin: 0;
 		}
-		input[type=number]{ -moz-appearance: textfield; appearance: textfield; text-overflow: clip !important }
 		#sources{
 			width: 176px; height: 100%;
 			position: fixed;
@@ -129,7 +128,12 @@
 			padding: 10px;
 			display: flex;
 			align-items: center;
+			flex-flow: row nowrap;
+			overflow-x: auto;
 			gap: 10px;
+		}
+		#info > *{
+			flex-shrink: 0;
 		}
 		#info input{
 			background: #0000;
@@ -139,11 +143,20 @@
 			padding: 0;
 			margin: 0;
 			overflow: hidden;
-			text-overflow: ellipsis;
+			text-overflow: clip;
 		}
 		#fs, #download, #copy{
 			height: 20px;
 			filter: var(--fb);
+			cursor: pointer;
+		}
+		#format{
+			height: 20px; width: 20px;
+			background: var(--b);
+			color: var(--a);
+			font-size: 10px;
+			line-height: 20px;
+			text-align: center;
 			cursor: pointer;
 		}
 		#canvas:fullscreen{
@@ -268,13 +281,13 @@
 			flex: 1;
 		}
 		#toasts > div{
+			white-space: pre-wrap;
 			width: 100%;
 			border: 2px solid #0008;
 			background-image: linear-gradient(var(--at));
 			padding: 6px;
 			margin-top: 0;
 			animation: toast 8s linear forwards 1;
-			cursor: pointer;
 			font-size: 14px;
 		}
 		#toasts > span{
@@ -327,9 +340,12 @@
 	</div>
 	<canvas id="canvas"></canvas>
 	<div id="info">
-		<span style="border-bottom:1.5px var(--b) solid;"><input type="number" min="1" id="w" placeholder="720" />x<input type="number" min="1" id="h" placeholder="450" /></span>
+		<span style="border-bottom:1.5px var(--b) solid;"><input min="1" id="w" placeholder="720" /> * <input min="1" id="h" placeholder="450" /></span>
+		<span style="border-bottom:1.5px var(--b) solid;">t&lt;<input min="0" id="t" placeholder=" ∞ " /></span>
+		<span style="border-bottom:1.5px var(--b) solid;">fps: <input min="0" id="f" placeholder="auto" /></span>
 		<div style="flex-grow: 1;"></div>
 		<span id="mspf" style="font-style:italic;opacity:0.5">draw: ---</span>
+		<div id="format" title="Export format">PNG</div>
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
@@ -340,5 +356,6 @@
 	</div>
 	<div id="resize">=</div>
 </body>
+<script src="./gif.js"></script>
 <script src="index.js"></script>
 </html>

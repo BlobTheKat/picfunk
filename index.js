@@ -156,8 +156,8 @@ gl.compileShader(vsh)
 const p = gl.createProgram()
 gl.attachShader(p, vsh)
 gl.attachShader(p, fsh)
-let err = '', tLoc = null
-let tOrigin = 0
+let err = '', tLoc = null, isizeLoc = null, sizeLoc = null, tMaxLoc = null
+let tOrigin = -1, maxTime = 0, interval = 0
 let errors = []
 function makeError(err,c){
 	const p = c?c.previousElementSibling:highlighted.lastElementChild
@@ -174,7 +174,7 @@ function makeError(err,c){
 }
 function code(){
 	for(const e of errors) e.remove()
-	cancelAnimationFrame(raf)
+	raf > 0 ? cancelAnimationFrame(raf) : raf < 0 && clearTimeout(raf)
 	errors.length = 0
 	const a = performance.now()
 	gl.shaderSource(fsh, `#version 300 es
@@ -182,6 +182,7 @@ precision mediump float;
 uniform float t;
 uniform ivec2 isize;
 uniform vec2 size;
+uniform float tMax;
 ${images.size?'struct GL_TexturesType{sampler2D '+[...images.keys()]+';};uniform GL_TexturesType images;':''}
 in vec2 GL_uv;
 out vec4 GL_col;
@@ -225,6 +226,9 @@ void main(){GL_col=GL_main(GL_uv);}
 		return
 	}
 	tLoc = gl.getUniformLocation(p, 't')
+	isizeLoc = gl.getUniformLocation(p, 'isize')
+	sizeLoc = gl.getUniformLocation(p, 'size')
+	tMaxLoc = gl.getUniformLocation(p, 'tMax')
 	tOrigin = performance.now()
 	toast('Shader compiled in '+(tOrigin-a).toFixed(2)+'ms', '#0f0')
 	for(const {0:k,1:t} of images){
@@ -236,7 +240,7 @@ void main(){GL_col=GL_main(GL_uv);}
 let panelH = 0
 const {0:maxW,1:maxH} = gl.getParameter(gl.MAX_VIEWPORT_DIMS)
 function setsize(w, h){
-	w = Math.min(maxW, w); h = Math.min(maxH, h)
+	w = Math.min(maxW, (w|0)||1); h = Math.min(maxH, (h|0)||1)
 	gl.canvas.width = w
 	gl.canvas.height = h
 	iW.value = w; iH.value = h
@@ -249,22 +253,24 @@ function setsize(w, h){
 const q = gl.createQuery()
 const {TIME_ELAPSED_EXT=0} = gl.getExtension('EXT_disjoint_timer_query_webgl2')??0
 const mspf = $('#mspf')
+if(!TIME_ELAPSED_EXT) mspf.remove()
 let mspfAvg = 0
 function drawTime(dt){
 	if(dt > 184400) return
 	mspfAvg += (dt-mspfAvg)/30
 	mspf.textContent = 'draw: '+mspfAvg.toFixed(2)+'ms'
 }
-let c = null
-let raf = -1
+let raf = 0
 let overdraw = 0
 function draw(_time){
-	if(errors.length) return
-	gl.uniform2i(gl.getUniformLocation(p, 'isize'), gl.canvas.width, gl.canvas.height)
-	gl.uniform2f(gl.getUniformLocation(p, 'size'), gl.canvas.width, gl.canvas.height)
+	if(errors.length || tOrigin < 0) return
+	gl.uniform2i(isizeLoc, gl.canvas.width, gl.canvas.height)
+	gl.uniform2f(sizeLoc, gl.canvas.width, gl.canvas.height)
+	gl.uniform1f(tMaxLoc, maxTime)
 	if(tLoc){
-		raf = requestAnimationFrame(draw)
-		gl.uniform1f(tLoc, (performance.now()-tOrigin)/1000)
+		raf = interval ? -setTimeout(draw, interval) : requestAnimationFrame(draw)
+		const t = (performance.now()-tOrigin)/1000
+		gl.uniform1f(tLoc, maxTime ? t%maxTime : t)
 		if(typeof _time === 'number' && TIME_ELAPSED_EXT && gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))
 			drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
 	}
@@ -272,13 +278,24 @@ function draw(_time){
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
 	if(TIME_ELAPSED_EXT) gl.endQuery(TIME_ELAPSED_EXT)
 	if(!tLoc){
-		if(!c) c=document.createElement('canvas').getContext('2d'),c.canvas.width=c.canvas.height=1
-		c.drawImage(gl.canvas, 0, 0)
-		if(TIME_ELAPSED_EXT) requestAnimationFrame(() => {
+		let tries = 5
+		if(TIME_ELAPSED_EXT) requestAnimationFrame(function test(){
 			if(gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))
 				drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
+			else if(--tries) requestAnimationFrame(test)
 		})
 	}
+}
+function quickdraw1(){
+	if(errors.length || tOrigin < 0) return false
+	gl.uniform2i(isizeLoc, gl.canvas.width, gl.canvas.height)
+	gl.uniform2f(sizeLoc, gl.canvas.width, gl.canvas.height)
+	gl.uniform1f(tMaxLoc, maxTime)
+	return true
+}
+function quickdraw2(t){
+	gl.uniform1f(tLoc, t)
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
 }
 onbeforeunload = () => true
 const input = $('#input'), highlighted = $('#txt')
@@ -385,40 +402,129 @@ resize.onpointermove = e => {
 	document.body.style.setProperty('--h', panelH+'px')
 }
 
-const iW = $('#w'), iH = $('#h')
-iW.oninput = iH.oninput = function(){
-	this.style.maxWidth = 0
-	this.style.maxWidth = this.scrollWidth+'px'
+const iW = $('#w'), iH = $('#h'), iT = $('#t'), iF = $('#f')
+const customInput = (el, checker) => {
+	let lastS = 0, lastE = 0, lastV = ''
+	el.onselectionchange = () => {
+		lastS = el.selectionStart; lastE = el.selectionEnd; lastV = el.value
+	}
+	el.oninput = () => {
+		if(checker(el.value)){
+			lastS = el.selectionStart; lastE = el.selectionEnd; lastV = el.value
+		}else{
+			el.value = lastV
+			el.selectionStart = lastS; el.selectionEnd = lastE
+			return
+		}
+		el.style.maxWidth = 0
+		const v = !el.value
+		if(v) el.value = el.placeholder
+		el.style.maxWidth = el.scrollWidth+'px'
+		if(v) el.value = ''
+	}
 }
-iW.onchange = () => (setsize(iW.value, gl.canvas.height))
-iH.onchange = () => (setsize(gl.canvas.width, iH.value))
-iW.value = iH.value = 200
-iW.oninput(); iH.oninput()
+const isNum = v => {
+	let dots = 0
+	for(let i=0;i<v.length;i++){
+		if(v.charCodeAt(i) === 46){
+			if(++dots > 1) return false
+		}
+		else if(v.charCodeAt(i) < 48 || v.charCodeAt(i) > 57) return false
+	}
+	return true
+}
+customInput(iW, isNum); customInput(iH, isNum)
+customInput(iT, isNum); customInput(iF, isNum)
+iW.onchange = () => (setsize(+iW.value, gl.canvas.height))
+iH.onchange = () => (setsize(gl.canvas.width, +iH.value))
+iT.onchange = () => {
+	maxTime = Math.abs(+iT.value||0)
+	if(tOrigin >= 0) tOrigin = performance.now()
+}
+iF.onchange = () => {
+	interval = Math.max(0, Math.min(250, +iF.value||0))
+	if(interval > 0) interval = 1000/interval
+}
+iT.parentElement.onclick = e => {e.target != iT && iT.focus()}
+iF.parentElement.onclick = e => {e.target != iF && iF.focus()}
+iT.oninput(); iF.oninput()
 
-$('#fs').onclick = () => gl.canvas.requestFullscreen()
-$('#fs').oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
+const format = $('#format')
+let oldToast = null
+let expQuality = 1, expFormat = 'PNG', gifDither = 'Atkinson', gifRepeat = 0
+format.onclick = () => {
+	expFormat = format.textContent == 'PNG' ? 'JPEG' : format.textContent == 'JPEG' ? 'WEBP' : format.textContent == 'WEBP' ? 'GIF' : 'PNG'
+	format.textContent = expFormat
+	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
+	oldToast && oldToast.remove()
+	oldToast = toast('Export format: '+expFormat, '#f08')
+}
+const fs = $('#fs')
+fs.onclick = () => gl.canvas.requestFullscreen()
+fs.oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
 	setsize(gl.canvas.offsetWidth * devicePixelRatio, gl.canvas.offsetHeight * devicePixelRatio)
 }))
 
 fetch('./creo.webp').then(a=>a.blob()).then(a => addFile(a,'creo'))
 
-function download(){
-	draw()
-	gl.canvas.toBlob(a => {
-		const l = document.createElement('a')
-		l.download = 'picfunk-output'
-		l.href = URL.createObjectURL(a)
-		l.click()
-		URL.revokeObjectURL(l.href)
-	}, 'image/png')
+const toBlobFormats = {
+	__proto__: null,
+	'PNG': 'image/png',
+	'JPEG': 'image/jpeg',
+	'WEBP': 'image/webp',
 }
-$('#download').onclick = download
-$('#copy').onclick = () => {
+const GIF_MAGIC = .0471012869725
+function download(method = saveBlob){
 	draw()
-	gl.canvas.toBlob(a => {
-		navigator.clipboard.write([new ClipboardItem({'image/png': a})])
-	}, 'image/png')
+	const f = toBlobFormats[format.textContent]
+	if(!f){
+		// GIF
+		const g = new GIF({
+			workers: navigator.hardwareConcurrency || 4,
+			quality: Math.round(Math.log(GIF_MAGIC+expQuality*(1-GIF_MAGIC))*-9.491221581+1),
+			repeat: gifRepeat && (gifRepeat-1-(gifRepeat == 1)),
+			width: gl.canvas.width,
+			height: gl.canvas.height,
+			dither: gifDither,
+			workerScript: './gif.worker.js'
+		})
+		g.on('progress', p => {
+			progress.textContent = 'Exporting: ' + Math.round(p*100) + '%\nClick to cancel'
+		})
+		g.on('finished', method)
+		const progress = toast('Exporting GIF...\nClick to cancel', '#f08', () => {
+			g.abort()
+			progress.textContent = 'Export cancelled'
+			progress.onclick = null
+		})
+		const opts = {copy:true, delay: interval || 33.333}
+		const step = interval ? interval*.001 : .033333
+		quickdraw1()
+		for(let t = 0; t < (maxTime || 1); t += step){
+			quickdraw2(t)
+			g.addFrame(gl.canvas, opts)
+		}
+		g.render()
+		draw()
+		return
+	}
+	gl.canvas.toBlob(method, f, expQuality)
 }
+
+function saveBlob(a){
+	const l = document.createElement('a')
+	l.download = 'picfunk-output'
+	l.href = URL.createObjectURL(a)
+	l.click()
+	URL.revokeObjectURL(l.href)
+}
+
+$('#download').onclick = download.bind(null, saveBlob)
+$('#copy').onclick = download.bind(null, a => {
+	navigator.clipboard.write([new ClipboardItem({[a.type]: a})]).catch(e => {
+		toast('Copy Image: ' + e.message, '#f00')
+	})
+})
 
 onkeydown = e => {
 	if(e.keyCode===83&&e.metaKey) e.preventDefault(),download()
@@ -470,11 +576,15 @@ clr.onclick = () => {
 	toasts.textContent = ''
 }
 clr.remove()
-function toast(msg, color = '#0f0'){
+function toast(msg, color = '#0f0', click = null){
 	const n = document.createElement('div')
 	n.style.backgroundColor = color
 	n.textContent = msg
+	n.title = new Date().toLocaleString()
+	if(click) n.onclick = click, n.style.cursor = 'pointer'
 	if(!toasts.childElementCount) toasts.append(clr)
 	toasts.append(n)
+	if(toasts.childElementCount > 101) toasts.children[1].remove()
 	toasts.scrollTo(0, 1e9)
+	return n
 }
