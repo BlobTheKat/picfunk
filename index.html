@@ -77,10 +77,28 @@
 			-webkit-text-stroke: 4px black;
 			cursor: pointer;
 		}
+		.tex > .wx, .tex > .wy, .tex > .mg{
+			position: absolute;
+			top: 2px; right: 27px;
+			color: black;
+			font: bold 15.5px Arial;
+			-webkit-text-stroke: 4px black;
+			cursor: pointer;
+		}
+		.tex > .wx:after, .tex > .wy:after, .tex > .mg:after{
+			content: attr(data-c);
+			color: white;
+			-webkit-text-stroke: 0;
+			position: absolute;
+			left: 0;
+		}
+		.tex > .wx{ right: 44px; }
+		.tex > .mg{ right: 61px; }
 		.tex > .dim{
 			position: absolute;
 			top: 2px; left: 2px;
 			cursor: pointer;
+			font-size: 14px;
 			text-shadow: 0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a);
 		}
 		.tex > .del:after{
@@ -123,7 +141,7 @@
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
-		#info > #fs, #info > #download, #info > #copy{
+		#fs, #download, #copy{
 			height: 20px;
 			filter: var(--fb);
 			cursor: pointer;
@@ -149,6 +167,7 @@
 			min-height: 100%;
 			font-size: 16px;
 			white-space: pre-wrap;
+			overflow-wrap: anywhere;
 			line-height: 1.4em;
 			tab-size: 3;
 			padding: 8px 0 8px 16px;
@@ -225,6 +244,64 @@
 			font-weight: bold;
 		}
 		#brand a{color:#05f}
+		@keyframes toast{
+			0%{ opacity: 0.7 }
+			60%{ opacity: 0.7 }
+			100%{ opacity: 0 }
+		}
+		#toasts{
+			position: fixed;
+			top: 0; left: 0;
+			width: 352px;
+			height: 100%;
+			z-index: 1000;
+			scrollbar-width: 0;
+			display: flex;
+			flex-flow: column;
+			padding: 4px;
+			gap: 4px;
+			pointer-events: none;
+			overflow-y: auto;
+		}
+		#toasts::before{
+			content: '';
+			flex: 1;
+		}
+		#toasts > div{
+			width: 100%;
+			border: 2px solid #0008;
+			background-image: linear-gradient(var(--at));
+			padding: 6px;
+			margin-top: 0;
+			animation: toast 8s linear forwards 1;
+			cursor: pointer;
+			font-size: 14px;
+		}
+		#toasts > span{
+			font-size: 12px;
+			opacity: 0.5;
+			cursor: pointer;
+			width: 100%;
+			text-decoration: underline;
+			opacity: 0;
+		}
+		#toast-hitbox{
+			position: fixed;
+			bottom: 0; left: 0;
+			width: 176px; height: 16px;
+			z-index: 999;
+		}
+		#toasts:hover > div{
+			opacity: 0.8 !important;
+			animation-play-state: paused;
+		}
+		#toasts:hover > span{
+			opacity: 0.5;
+		}
+		#toast-hitbox:hover + #toasts, #toasts:hover{
+			pointer-events: all;
+		}
+		#toasts::-webkit-scrollbar{ width: 0; height: 0; }
 	</style>
 </head>
 <pre style="display:none;visibility:hidden;">
@@ -233,9 +310,16 @@
 		<img src draggable="false" />
 		<input /> <span class="del">x</span>
 		<span class="dim" title="Use this size"></span>
+		<span class="wx" data-c="R">R</span>
+		<span class="wy" data-c="R">R</span>
+		<span class="mg" data-c="L">L</span>
 	</div>
 </pre>
 <body>
+	<div id="toast-hitbox"></div>
+	<div id="toasts">
+		<span>Clear all toasts</span>
+	</div>
 	<div id="sources">
 		<div id="logo">icfunk</div>
 		<div id="brand"><a href="https://github.com/BlobTheKat/picfunk">Github</a> &bullet; <a href="https://ko-fi.com/blobbybot">Leave a tip</a></div>

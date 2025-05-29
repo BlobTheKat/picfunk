@@ -14,16 +14,31 @@ const makeName = a => {
 	}
 	return name
 }
-function addFile(file){
+
+const extOf = file => {
+	const i = file.name.lastIndexOf('.')
+	if(i < 0) return '<unknown>'
+	return file.name.slice(i).toLowerCase()
+}
+const fmtSize = size => {
+	if(size < 768) return size + 'B'
+	if(size < 786432) return (size/1024).toFixed(2) + 'KiB'
+	if(size < 805306368) return (size/1048576).toFixed(2) + 'MiB'
+	return (size/1073741824).toFixed(2) + 'GiB'
+}
+
+function addFile(file, nm = file.name){
 	if(sourcesContainer.childElementCount > maxTextures) return
-	if(!file.type.startsWith('image/')) return
+	if(!file.type.startsWith('image/')) return toast("Not an image: " + extOf(file), '#f00')
 	const n = texTemplate.cloneNode(true)
-	const {0:a,1:b,2:c,3:d} = n.children
+	const {0:a,1:b,2:c,3:d,4:e,5:f,6:g} = n.children
 	a.src = URL.createObjectURL(file)
-	let name = b.value = makeName(file.name)
+	let name = b.value = makeName(nm)
 	let t = null
+	a.onerror = err => toast("Parsing image: " + err.message, '#f00')
 	a.onload = () => {
 		if(t) return
+		toast((file.name || '(From URL)') + ': ' + fmtSize(file.size))
 		d.textContent = a.naturalWidth+'x'+a.naturalHeight
 		if(!images.size) setsize(a.naturalWidth, a.naturalHeight)
 		d.onclick = () => setsize(a.naturalWidth, a.naturalHeight)
@@ -34,10 +49,38 @@ function addFile(file){
 		usedTextures[i] |= 1<<j
 		gl.activeTexture(gl.TEXTURE0+t.id)
 		gl.bindTexture(gl.TEXTURE_2D, t)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+		if(maxAniso)
+			gl.texParameteri(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, maxAniso)
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, a)
 		gl.generateMipmap(gl.TEXTURE_2D)
 		images.set(name, t)
 		code()
+	}
+	e.onclick = () => {
+		if(!t) return
+		const id = e.dataset.c == 'R' ? 'M' : e.dataset.c == 'M' ? 'C' : 'R'
+		e.dataset.c = e.textContent = id
+		gl.activeTexture(gl.TEXTURE0+t.id)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, id == 'R' ? gl.REPEAT : id == 'M' ? gl.MIRRORED_REPEAT : gl.CLAMP_TO_EDGE)
+		if(!tLoc) draw()
+	}
+	f.onclick = () => {
+		if(!t) return
+		const id = f.dataset.c == 'R' ? 'M' : f.dataset.c == 'M' ? 'C' : 'R'
+		f.dataset.c = f.textContent = id
+		gl.activeTexture(gl.TEXTURE0+t.id)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, id == 'R' ? gl.REPEAT : id == 'M' ? gl.MIRRORED_REPEAT : gl.CLAMP_TO_EDGE)
+		if(!tLoc) draw()
+	}
+	g.onclick = () => {
+		if(!t) return
+		const id = g.dataset.c == 'L' ? 'N' : 'L'
+		g.dataset.c = g.textContent = id
+		gl.activeTexture(gl.TEXTURE0+t.id)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, id == 'L' ? gl.LINEAR : gl.NEAREST)
+		if(!tLoc) draw()
 	}
 	b.onchange = () => {
 		if(!t) return void(b.value = name)
@@ -63,7 +106,7 @@ function addFile(file){
 function addFromTransfer({items}){
 	for(const item of items){
 		if(item.type === 'text/plain'){
-			item.getAsString(s => /https?:\/\//.test(s) && fetch(s).then(a => a.blob()).then(addFile))
+			item.getAsString(s => /https?:\/\//y.test(s) && fetch(s).then(a => a.blob()).then(addFile, err => toast("Pasted URL: " + err.message, '#f00')))
 			continue
 		} 
 		const f = item.getAsFile()
@@ -71,7 +114,7 @@ function addFromTransfer({items}){
 	}
 }
 
-document.body.addEventListener('paste', e => addFromTransfer(e.clipboardData))
+document.body.addEventListener('paste', e => document.activeElement == document.body && addFromTransfer(e.clipboardData))
 
 document.body.ondragover = e => e.preventDefault()
 document.body.ondrop = e => (e.preventDefault(),addFromTransfer(e.dataTransfer))
@@ -92,6 +135,8 @@ uploadInput.onchange = () => {
 const gl = $('#canvas').getContext('webgl2', {depth: false, stencil: false, desynchronized: true, antialias: false})
 // Trust me, I know how to use opengl
 
+const aniso = gl.getExtension('EXT_texture_filter_anisotropic')
+let maxAniso = aniso ? gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 0
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
 const maxTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
 const usedTextures = new Int32Array(maxTextures+31>>5)
@@ -131,14 +176,12 @@ function code(){
 	for(const e of errors) e.remove()
 	cancelAnimationFrame(raf)
 	errors.length = 0
+	const a = performance.now()
 	gl.shaderSource(fsh, `#version 300 es
-#define getColor(a,b) (texture(a,b))
-#define getPixel(a,b) (texelFetch(a,b,0))
-#define getSize(a) (textureSize(a,0))
-#define img sampler2D
 precision mediump float;
 uniform float t;
-uniform ivec2 size;
+uniform ivec2 isize;
+uniform vec2 size;
 ${images.size?'struct GL_TexturesType{sampler2D '+[...images.keys()]+';};uniform GL_TexturesType images;':''}
 in vec2 GL_uv;
 out vec4 GL_col;
@@ -151,6 +194,7 @@ void main(){GL_col=GL_main(GL_uv);}
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
 	if(err){
+		//toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		const v = input.value.split('\n')
 		const arr = []
 		let c = 0, j = 0; for(const l of v) arr.push(c),c+=l.length+1
@@ -165,22 +209,24 @@ void main(){GL_col=GL_main(GL_uv);}
 				makeError(e, ch[j])
 			}
 		}
-		if(errors.length)return
+		return
 	}
 	gl.linkProgram(p)
 	gl.useProgram(p)
 	err = gl.getProgramInfoLog(p)
 	if(err){
+		//toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
 			if(e.startsWith('ERROR:')){
 				e = e.slice(6)
 				highlighted.makeError(e, highlighted.firstElementChild)
 			}
 		}
-		if(errors.length)return
+		return
 	}
 	tLoc = gl.getUniformLocation(p, 't')
 	tOrigin = performance.now()
+	toast('Shader compiled in '+(tOrigin-a).toFixed(2)+'ms', '#0f0')
 	for(const {0:k,1:t} of images){
 		const loc = gl.getUniformLocation(p, 'images.'+k)
 		if(loc) gl.uniform1i(loc, t.id)
@@ -194,9 +240,11 @@ function setsize(w, h){
 	gl.canvas.width = w
 	gl.canvas.height = h
 	iW.value = w; iH.value = h
+	iW.oninput(); iH.oninput()
 	gl.viewport(0, 0, w, h)
 	panelH = Math.round(Math.min(h/w*(document.body.offsetWidth-176), document.body.offsetHeight/2-8))
 	document.body.style.setProperty('--h', panelH+'px')
+	if(!tLoc) draw()
 }
 const q = gl.createQuery()
 const {TIME_ELAPSED_EXT=0} = gl.getExtension('EXT_disjoint_timer_query_webgl2')??0
@@ -212,7 +260,8 @@ let raf = -1
 let overdraw = 0
 function draw(_time){
 	if(errors.length) return
-	gl.uniform2i(gl.getUniformLocation(p, 'size'), gl.canvas.width, gl.canvas.height)
+	gl.uniform2i(gl.getUniformLocation(p, 'isize'), gl.canvas.width, gl.canvas.height)
+	gl.uniform2f(gl.getUniformLocation(p, 'size'), gl.canvas.width, gl.canvas.height)
 	if(tLoc){
 		raf = requestAnimationFrame(draw)
 		gl.uniform1f(tLoc, (performance.now()-tOrigin)/1000)
@@ -254,10 +303,9 @@ input.value = `// Scroll up for docs
 
 vec4 main(vec2 uv){
 	// Try editing this
-	vec4 color = getColor(images.creo, uv);
+	vec4 color = texture(images.creo, uv);
 	// Replace *= with = to see the original gradient
 	color *= vec4(uv.x, uv.x*uv.y*1.5, uv.y, 1);
-	// Try uploading an image and using getColor(images.<<your_image>>, uv); after the *=
 \t
 	// Uncomment this line for fun
 	//color += vec4(0.8) * pow(mod(-t,0.667),2.0);
@@ -342,14 +390,17 @@ iW.oninput = iH.oninput = function(){
 	this.style.maxWidth = 0
 	this.style.maxWidth = this.scrollWidth+'px'
 }
-iW.onchange = () => (setsize(iW.value, gl.canvas.height),draw())
-iH.onchange = () => (setsize(gl.canvas.width, iH.value),draw())
+iW.onchange = () => (setsize(iW.value, gl.canvas.height))
+iH.onchange = () => (setsize(gl.canvas.width, iH.value))
 iW.value = iH.value = 200
 iW.oninput(); iH.oninput()
 
 $('#fs').onclick = () => gl.canvas.requestFullscreen()
+$('#fs').oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
+	setsize(gl.canvas.offsetWidth * devicePixelRatio, gl.canvas.offsetHeight * devicePixelRatio)
+}))
 
-fetch('./creo.webp').then(a=>a.blob()).then(a => {a.name='creo';addFile(a)})
+fetch('./creo.webp').then(a=>a.blob()).then(a => addFile(a,'creo'))
 
 function download(){
 	draw()
@@ -376,23 +427,19 @@ onkeydown = e => {
 	const v = `#version 300 es
 precision mediump float;
 
-#define img sampler2D
 const float PI = 3.141592653589793;
 const float E = 2.718281828459045;
 const float SQRT2 = 1.4142135623730951;
 
-// Get color at a position between (0,0) and (1,1) (corresponding to bottom-left and top-right of the texture). Linear interpolation applies
-vec4 getColor(img image, vec2 pos); // -> texture(...)
-// Get the pixel at an ivec2 coordinate of the image between (0,0) and (img_width, img_height). No sampling / interpolation is done
-vec4 getPixel(img image, ivec2 coord) // -> texelFetch(..., 0)
-// Get the size of a texture
-vec2 getSize(img image) // -> textureSize(...,0)
 // Output size
-uniform ivec2 size;
+uniform vec2 size;
+uniform ivec2 isize;
 // Struct of all images (address using images.<img_name>)
 uniform struct images;
+// Time variable for animations
+uniform float t;
 
-void main(){gl_FragColor = main(gl_FragCoord.xy / vec2(size));}`; let inv = 0, i = 0
+void main(){ gl_FragColor = main(gl_FragCoord.xy / vec2(size)); }`; let inv = 0, i = 0
 	const highlighted1 = $('#txt1')
 	t: while(i+inv < v.length){
 		for(const {0:k,1:r} of tokens){
@@ -416,3 +463,18 @@ void main(){gl_FragColor = main(gl_FragCoord.xy / vec2(size));}`; let inv = 0, i
 }
 
 $('#editor').scrollTo(0, 1e9)
+
+const toasts = $('#toasts')
+const clr = toasts.firstElementChild
+clr.onclick = () => {
+	toasts.textContent = ''
+}
+clr.remove()
+function toast(msg, color = '#0f0'){
+	const n = document.createElement('div')
+	n.style.backgroundColor = color
+	n.textContent = msg
+	if(!toasts.childElementCount) toasts.append(clr)
+	toasts.append(n)
+	toasts.scrollTo(0, 1e9)
+}
