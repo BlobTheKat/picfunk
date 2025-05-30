@@ -449,16 +449,39 @@ iT.parentElement.onclick = e => {e.target != iT && iT.focus()}
 iF.parentElement.onclick = e => {e.target != iF && iF.focus()}
 iT.oninput(); iF.oninput()
 
-const format = $('#format')
+const format = $('#format'), quality = $('#quality'), gifDitherSel = $('#gifdither'), gifRepeatSel = $('#gifrepeat')
 let oldToast = null
-let expQuality = 1, expFormat = 'PNG', gifDither = 'Atkinson', gifRepeat = 0
+let expQuality = 1, expFormat = 'PNG', gifDither = false, gifRepeat = 0
 format.onclick = () => {
-	expFormat = format.textContent == 'PNG' ? 'JPEG' : format.textContent == 'JPEG' ? 'WEBP' : format.textContent == 'WEBP' ? 'GIF' : 'PNG'
+	const t = format.textContent
+	expFormat = t == 'PNG' ? 'JPEG' : t == 'JPEG' ? 'WEBP' : t == 'WEBP' ? 'GIF' : 'PNG'
 	format.textContent = expFormat
 	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
+	quality.style.display = expFormat == 'PNG' ? 'none' : ''
 	oldToast && oldToast.remove()
 	oldToast = toast('Export format: '+expFormat, '#f08')
+	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
+		expFormat == 'GIF' ? 'block' : 'none'
 }
+quality.onpointerdown = e => quality.setPointerCapture(e.pointerId)
+quality.onpointerup = e => quality.releasePointerCapture(e.pointerId)
+quality.onpointermove = e => {
+	if(!quality.hasPointerCapture(e.pointerId)) return
+	e.preventDefault()
+	expQuality = Math.min(1, Math.max(0, e.layerX / quality.offsetWidth))
+	quality.style.setProperty('--q', (expQuality*100).toFixed(2)+'%')
+	quality.textContent = 'Quality: '+Math.round(expQuality*100)+'%'
+}
+const dithers = [false, 'Atkinson', 'Atkinson-serpentine', 'FalseFloydSteinberg', 'FalseFloydSteinberg-serpentine', 'FloydSteinberg', 'FloydSteinberg-serpentine', 'Stucki', 'Stucki-serpentine']
+const ditherTexts = ['None', 'Atkinson', 'Atkinson-S', 'FalseFS', 'FalseFS-S', 'FS', 'FS-S', 'Stucki', 'Stucki-S']
+gifDitherSel.onclick = () => {
+	let i = dithers.indexOf(gifDither)
+	if(++i == dithers.length) i = 0
+	gifDither = dithers[i]
+	gifDitherSel.textContent = 'Dither: ' + ditherTexts[i]
+}
+customInput(gifRepeatSel, s => !/\D/.test(s))
+gifRepeatSel.onchange = () => { gifRepeat = +gifRepeatSel.value }
 const fs = $('#fs')
 fs.onclick = () => gl.canvas.requestFullscreen()
 fs.oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
@@ -500,7 +523,8 @@ function download(method = saveBlob){
 		const opts = {copy:true, delay: interval || 33.333}
 		const step = interval ? interval*.001 : .033333
 		quickdraw1()
-		for(let t = 0; t < (maxTime || 1); t += step){
+		const end = tLoc ? maxTime || 1 : 1e-308
+		for(let t = 0; t < end; t += step){
 			quickdraw2(t)
 			g.addFrame(gl.canvas, opts)
 		}

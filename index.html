@@ -122,17 +122,24 @@
 		}
 		#info{
 			height: 50px; position: absolute;
-			background: linear-gradient(to bottom, var(--at2), var(--a));
-			top: calc(var(--h) - 50px);
-			right: 0; width: calc(100% - 176px);
-			padding: 10px;
+			height: var(--h); width: calc(100% - 176px);
+			top: 0; right: 0;
+			overflow-x: auto;
+			pointer-events: none;
+			display: flex; flex-direction: column;
+			justify-content: end;
+		}
+		#info > div{
 			display: flex;
 			align-items: center;
 			flex-flow: row nowrap;
-			overflow-x: auto;
 			gap: 10px;
+			pointer-events: all;
+			padding: 10px;
+			height: 50px;
+			background: linear-gradient(to bottom, var(--at2), var(--a));
 		}
-		#info > *{
+		#info > div > *{
 			flex-shrink: 0;
 		}
 		#info input{
@@ -158,6 +165,44 @@
 			line-height: 20px;
 			text-align: center;
 			cursor: pointer;
+			position: relative;
+			z-index: 6;
+		}
+		#format:hover + #formatopts, #formatopts:hover{
+			display: block;
+		}
+		#formatopts{
+			position: absolute;
+			bottom: 20px; right: 0;
+			color: var(--b);
+			padding: 6px;
+			width: 176px;
+			display: none;
+			font-size: 14px;
+			cursor: default;
+			padding-bottom: 20px;
+			z-index: 5;
+		}
+		#formatopts > *{
+			background: var(--at);
+			width: 100%;
+			padding: 3px;
+		}
+		#quality{
+			position: relative;
+			text-align: center;
+			cursor: text;
+		}
+		#quality::before{
+			content: '';
+			position: absolute;
+			top: 0; left: 0;
+			height: 100%;
+			width: var(--q);
+			backdrop-filter: invert(1);
+		}
+		#gifdither, #gifdither + div{
+			border-bottom: 1.5px var(--b) solid;
 		}
 		#canvas:fullscreen{
 			cursor: none;
@@ -339,17 +384,22 @@
 		<img draggable="false" id="upload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAACNJREFUGFdjZMACGGFiHR0d/ysqKsB8MAESgEmCJHCrRDcWAGuODAaFTh0eAAAAAElFTkSuQmCC" style="cursor:pointer;margin-bottom:50px;width:160px;image-rendering: pixelated;" />
 	</div>
 	<canvas id="canvas"></canvas>
-	<div id="info">
+	<div id="info"><div>
 		<span style="border-bottom:1.5px var(--b) solid;"><input min="1" id="w" placeholder="720" /> * <input min="1" id="h" placeholder="450" /></span>
 		<span style="border-bottom:1.5px var(--b) solid;">t&lt;<input min="0" id="t" placeholder=" ∞ " /></span>
 		<span style="border-bottom:1.5px var(--b) solid;">fps: <input min="0" id="f" placeholder="auto" /></span>
 		<div style="flex-grow: 1;"></div>
 		<span id="mspf" style="font-style:italic;opacity:0.5">draw: ---</span>
 		<div id="format" title="Export format">PNG</div>
+		<div id="formatopts">
+			<div id="quality" style="display: none;--q: 100%">Quality: 100%</div>
+			<div id="gifdither" style="cursor: pointer;display:none">Dither: None</div>
+			<div style="display:none">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
+		</div>
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">
 		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
-	</div>
+	</div></div>
 	<div id="editor">
 		<div id="txt1"></div>
 		<div id="txt"><textarea id="input"></textarea></div>
