@@ -215,6 +215,7 @@ void main(){GL_col=GL_main(GL_uv);}
 	}
 	if(!gl.getShaderParameter(fsh, gl.COMPILE_STATUS)){
 		if(!err) toast('Shader compilation failed (unknown error)')
+		tOrigin = -1
 		return
 	}
 	gl.linkProgram(p)
@@ -232,6 +233,7 @@ void main(){GL_col=GL_main(GL_uv);}
 	}
 	if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
 		if(!err) toast('Program link failed (unknown error)')
+		tOrigin = -1
 		return
 	}
 	tLoc = gl.getUniformLocation(p, 't')
@@ -272,7 +274,7 @@ function drawTime(dt){
 let raf = 0
 let overdraw = 0
 function draw(_time){
-	if(errors.length || tOrigin < 0) return
+	if(tOrigin < 0) return
 	gl.uniform2i(isizeLoc, gl.canvas.width, gl.canvas.height)
 	gl.uniform2f(sizeLoc, gl.canvas.width, gl.canvas.height)
 	gl.uniform1f(tMaxLoc, maxTime)
@@ -296,7 +298,7 @@ function draw(_time){
 	}
 }
 function quickdraw1(){
-	if(errors.length || tOrigin < 0) return false
+	if(tOrigin < 0) return false
 	gl.uniform2i(isizeLoc, gl.canvas.width, gl.canvas.height)
 	gl.uniform2f(sizeLoc, gl.canvas.width, gl.canvas.height)
 	gl.uniform1f(tMaxLoc, maxTime)
