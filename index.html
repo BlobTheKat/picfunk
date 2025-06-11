@@ -272,6 +272,8 @@
 			box-sizing: border-box;
 			z-index: 3;
 		}
+		#txt > err.warn:after{ background: #f90; }
+		#txt > err.info:after{ background: #888; }
 		#txt > err:hover:after{
 			content: attr(data-t);
 			width: 100%;

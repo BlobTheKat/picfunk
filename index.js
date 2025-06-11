@@ -159,7 +159,7 @@ gl.attachShader(p, fsh)
 let err = '', tLoc = null, isizeLoc = null, sizeLoc = null, tMaxLoc = null
 let tOrigin = -1, maxTime = 0, interval = 0
 let errors = []
-function makeError(err,c){
+function makeError(err,c,t=''){
 	const p = c?c.previousElementSibling:highlighted.lastElementChild
 	if(p && p.dataset.c){
 		p.dataset.c = Math.min((+p.dataset.c||1) + 1,9)
@@ -167,6 +167,7 @@ function makeError(err,c){
 		return
 	}
 	const n = document.createElement('err')
+	n.className = t
 	n.dataset.c = '!'
 	n.dataset.t = err.trim()
 	highlighted.insertBefore(n, c)
@@ -201,15 +202,19 @@ void main(){GL_col=GL_main(GL_uv);}
 		let c = 0, j = 0; for(const l of v) arr.push(c),c+=l.length+1
 		c = 0; const ch = highlighted.children
 		for(let e of err.split('\n')){
-			if(e.startsWith('ERROR:')){
-				e = e.slice(6)
-				const w = e.indexOf(':'), i = e.indexOf(':', w+1)
-				const idx = arr[e.slice(w+1, i)]; e = e.slice(i+1)
-				let L = ch[j].textContent.length
-				while(j<ch.length-1&&c+L<=idx) c+=L,L=ch[++j].textContent.length
-				makeError(e, ch[j])
-			}
+			let t = ''
+			if(e.startsWith('ERROR:')) e = e.slice(6)
+			else if(e.startsWith('WARNING:')) e = e.slice(8), t = 'warn'
+			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = 'info'
+			const w = e.indexOf(':'), i = e.indexOf(':', w+1)
+			const idx = arr[e.slice(w+1, i)]; e = e.slice(i+1)
+			let L = ch[j].textContent.length
+			while(j<ch.length-1&&c+L<=idx) c+=L,L=ch[++j].textContent.length
+			makeError(e, ch[j], t)
 		}
+	}
+	if(!gl.getShaderParameter(fsh, gl.COMPILE_STATUS)){
+		if(!err) toast('Shader compilation failed (unknown error)')
 		return
 	}
 	gl.linkProgram(p)
@@ -218,11 +223,15 @@ void main(){GL_col=GL_main(GL_uv);}
 	if(err){
 		//toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
-			if(e.startsWith('ERROR:')){
-				e = e.slice(6)
-				highlighted.makeError(e, highlighted.firstElementChild)
-			}
+			let t = ''
+			if(e.startsWith('ERROR:')) e = e.slice(6)
+			else if(e.startsWith('WARNING:')) e = e.slice(8), t = 'warn'
+			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = 'info'
+			makeError(e, highlighted.firstElementChild)
 		}
+	}
+	if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
+		if(!err) toast('Program link failed (unknown error)')
 		return
 	}
 	tLoc = gl.getUniformLocation(p, 't')
