@@ -405,14 +405,14 @@ input.oninput = () => {
 input.oninput()
 
 const resize = $('#resize')
-resize.onpointerdown = e => (resize.setPointerCapture(e.pointerId), e.preventDefault())
+resize.onpointerdown = e => resize.setPointerCapture(e.pointerId)
 resize.onpointerup = e => resize.releasePointerCapture(e.pointerId)
 resize.onpointermove = e => {
 	if(!resize.hasPointerCapture(e.pointerId)) return
-	e.preventDefault()
 	panelH = Math.round(Math.max(50, Math.min(e.clientY-8, document.body.offsetHeight-106)))
 	document.body.style.setProperty('--h', panelH+'px')
 }
+resize.ontouchstart = e => e.preventDefault()
 
 const iW = $('#w'), iH = $('#h'), iT = $('#t'), iF = $('#f')
 const customInput = (el, checker) => {
