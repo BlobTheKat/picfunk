@@ -405,10 +405,11 @@ input.oninput = () => {
 input.oninput()
 
 const resize = $('#resize')
-resize.onpointerdown = e => resize.setPointerCapture(e.pointerId)
+resize.onpointerdown = e => (resize.setPointerCapture(e.pointerId), e.preventDefault())
 resize.onpointerup = e => resize.releasePointerCapture(e.pointerId)
 resize.onpointermove = e => {
 	if(!resize.hasPointerCapture(e.pointerId)) return
+	e.preventDefault()
 	panelH = Math.round(Math.max(50, Math.min(e.clientY-8, document.body.offsetHeight-106)))
 	document.body.style.setProperty('--h', panelH+'px')
 }
