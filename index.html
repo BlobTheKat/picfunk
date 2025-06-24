@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" spellcheck="false" autocapitalize="none" style="height:100%">
+<html lang="en" spellcheck="false" autocapitalize="none">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +13,14 @@
 			font-family: AnkaCoder;
 			src: url(./AnkaCoder.ttf);
 		}
+		html, body{
+			height: 100%;
+			overflow: none;
+		}
 		body{
 			--a: #fff; --b: #000; --bt: #0006; --at: #fff6; --at2: #fff0;
 			--fb: brightness(0);
-			margin: 0; height: 100%;
+			margin: 0;
 			background: var(--a); color: var(--b);
 			overscroll-behavior: none;
 			user-select: none;
