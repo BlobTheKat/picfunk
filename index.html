@@ -17,11 +17,12 @@
 			height: 100%;
 			overflow: none;
 			overscroll-behavior: none;
+			touch-action: pan-x, pan-y;
 		}
 		body{
 			--a: #fff; --b: #000; --bt: #0006; --at: #fff6; --at2: #fff0;
 			--fb: brightness(0);
-			margin: 0;
+			margin: 0; position: relative;
 			background: var(--a); color: var(--b);
 			overscroll-behavior: none;
 			user-select: none;
@@ -31,9 +32,9 @@
 			-webkit-text-size-adjust: none !important;
 		}
 		@media screen and (max-width: 600px){
+			html{ overflow-x: scroll; }
 			body{
 				width: calc(100% + 176px);
-				overflow-x: scroll;
 				scroll-snap-type: x mandatory;
 				display: flex; justify-content: space-between;
 				scroll-behavior: smooth;
