@@ -17,7 +17,7 @@
 			height: 100%;
 			overflow: none;
 			overscroll-behavior: none;
-			touch-action: pan-x, pan-y;
+			touch-action: pan-x pan-y;
 		}
 		body{
 			--a: #fff; --b: #000; --bt: #0006; --at: #fff6; --at2: #fff0;
@@ -32,14 +32,21 @@
 			-webkit-text-size-adjust: none !important;
 		}
 		@media screen and (max-width: 600px){
-			html{ overflow-x: scroll; }
-			body{
-				width: calc(100% + 176px);
+			html{
+				overflow-x: scroll;
 				scroll-snap-type: x mandatory;
 				display: flex; justify-content: space-between;
 				scroll-behavior: smooth;
 			}
-			body::before, body::after{content:''; scroll-snap-align: center}
+			body{
+				width: calc(100% + 176px);
+				scroll-snap-align: start;
+				flex-shrink: 0;
+			}
+			html:after{
+				content: '';
+				scroll-snap-align: end;
+			}
 		}
 		@media(prefers-color-scheme:dark){body{--a:#000;--b:#fff;--at:#0006;--at2:#0000;--bt: #fff6;--fb:brightness(2)}}
 		*{
@@ -143,7 +150,6 @@
 			height: 50px; position: absolute;
 			height: var(--h); width: calc(100% - 176px);
 			top: 0; right: 0;
-			overflow-x: auto;
 			pointer-events: none;
 			display: flex; flex-direction: column;
 			justify-content: end;
@@ -153,6 +159,7 @@
 			align-items: center;
 			flex-flow: row nowrap;
 			gap: 10px;
+			overflow-x: auto;
 			pointer-events: all;
 			padding: 10px;
 			height: 50px;
@@ -233,7 +240,7 @@
 		}
 		#editor{
 			overflow-y: scroll;
-			overscroll-behavior: none;
+			overscroll-behavior-y: none;
 			position: absolute;
 			bottom: 0; right: 0;
 			width: calc(100% - 176px);
