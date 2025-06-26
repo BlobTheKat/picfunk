@@ -625,5 +625,3 @@ function toast(msg, color = '#0f0', click = null){
 	toasts.scrollTo(0, 1e9)
 	return n
 }
-
-document.documentElement.appendChild(document.createElement('div'))

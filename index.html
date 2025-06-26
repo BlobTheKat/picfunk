@@ -15,7 +15,7 @@
 		}
 		html, body{
 			height: 100%;
-			overflow: none;
+			overflow: hidden;
 			overscroll-behavior: none;
 		}
 		body{
@@ -29,19 +29,19 @@
 			--h: min(calc(62.5vw - 110px), calc(50vh - 8px));
 			text-size-adjust: none !important;
 			-webkit-text-size-adjust: none !important;
+			display: flex;
+			overflow-x: scroll;
+			scroll-snap-type: x mandatory;
+			align-items: stretch;
+			scroll-behavior: smooth;
+		}
+		#right{
+			flex: 1;
+			scroll-snap-align: end;
+			position: relative;
 		}
 		@media screen and (max-width: 600px){
-			html{
-				overflow-x: scroll;
-				scroll-snap-type: x mandatory;
-				display: flex; justify-content: space-between;
-				scroll-behavior: smooth;
-			}
-			body{
-				width: calc(100% + 176px);
-				scroll-snap-align: start;
-				flex-shrink: 0;
-			}
+			#right{ min-width: 100%; }
 		}
 		html > div{ scroll-snap-align: end; }
 		@media(prefers-color-scheme:dark){body{--a:#000;--b:#fff;--at:#0006;--at2:#0000;--bt: #fff6;--fb:brightness(2)}}
@@ -57,13 +57,12 @@
 			margin: 0;
 		}
 		#sources{
-			width: 176px; height: 100%;
-			position: absolute;
-			top: 0; left: 0;
+			width: 176px;
 			background: #8882;
 			padding: 8px;
 			overflow-y: scroll;
 			scroll-snap-align: start;
+			flex-shrink: 0;
 		}
 		::-webkit-scrollbar{
 			display: none;
@@ -131,7 +130,7 @@
 		}
 		#canvas{
 			position: absolute;
-			top: 0; right: 0; width: calc(100% - 176px);
+			top: 0; right: 0; width: 100%;
 			height: var(--h);
 			object-fit: contain;
 			cursor: crosshair;
@@ -144,7 +143,7 @@
 		}
 		#info{
 			height: 50px; position: absolute;
-			height: var(--h); width: calc(100% - 176px);
+			height: var(--h); width: 100%;
 			top: 0; right: 0;
 			pointer-events: none;
 			display: flex; flex-direction: column;
@@ -239,7 +238,7 @@
 			overscroll-behavior-y: none;
 			position: absolute;
 			bottom: 0; right: 0;
-			width: calc(100% - 176px);
+			width: 100%;
 			background: #8881;
 			height: calc(100% - var(--h) - 16px);
 		}
@@ -276,7 +275,7 @@
 		#resize{
 			position: absolute;
 			top: var(--h); right: 0;
-			width: calc(100% - 176px);
+			width: 100%;
 			height: 16px; border: 2px var(--b) solid;
 			opacity: 0.5;
 			text-align: center;
@@ -408,28 +407,30 @@
 		<div id="brand"><a href="https://github.com/BlobTheKat/picfunk">Github</a> &bullet; <a href="https://ko-fi.com/blobbybot">Leave a tip</a></div>
 		<img draggable="false" id="upload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAACNJREFUGFdjZMACGGFiHR0d/ysqKsB8MAESgEmCJHCrRDcWAGuODAaFTh0eAAAAAElFTkSuQmCC" style="cursor:pointer;margin-bottom:50px;width:160px;image-rendering: pixelated;" />
 	</div>
-	<canvas id="canvas"></canvas>
-	<div id="info"><div>
-		<span style="border-bottom:1.5px var(--b) solid;"><input min="1" id="w" placeholder="720" /> * <input min="1" id="h" placeholder="450" /></span>
-		<span style="border-bottom:1.5px var(--b) solid;">t&lt;<input min="0" id="t" placeholder=" ∞ " /></span>
-		<span style="border-bottom:1.5px var(--b) solid;">fps: <input min="0" id="f" placeholder="auto" /></span>
-		<div style="flex-grow: 1;"></div>
-		<span id="mspf" style="font-style:italic;opacity:0.5">draw: ---</span>
-		<div id="format" title="Export format">PNG</div>
-		<div id="formatopts">
-			<div id="quality" style="display: none;--q: 100%">Quality: 100%</div>
-			<div id="gifdither" style="cursor: pointer;display:none">Dither: None</div>
-			<div style="display:none">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
+	<div id="right">
+		<canvas id="canvas"></canvas>
+		<div id="info"><div>
+			<span style="border-bottom:1.5px var(--b) solid;"><input min="1" id="w" placeholder="720" /> * <input min="1" id="h" placeholder="450" /></span>
+			<span style="border-bottom:1.5px var(--b) solid;">t&lt;<input min="0" id="t" placeholder=" ∞ " /></span>
+			<span style="border-bottom:1.5px var(--b) solid;">fps: <input min="0" id="f" placeholder="auto" /></span>
+			<div style="flex-grow: 1;"></div>
+			<span id="mspf" style="font-style:italic;opacity:0.5">draw: ---</span>
+			<div id="format" title="Export format">PNG</div>
+			<div id="formatopts">
+				<div id="quality" style="display: none;--q: 100%">Quality: 100%</div>
+				<div id="gifdither" style="cursor: pointer;display:none">Dither: None</div>
+				<div style="display:none">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
+			</div>
+			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
+			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">
+			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
+		</div></div>
+		<div id="editor">
+			<div id="txt1"></div>
+			<div id="txt"><textarea id="input"></textarea></div>
 		</div>
-		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
-		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">
-		<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
-	</div></div>
-	<div id="editor">
-		<div id="txt1"></div>
-		<div id="txt"><textarea id="input"></textarea></div>
+		<div id="resize">=</div>
 	</div>
-	<div id="resize">=</div>
 </body>
 <script src="./gif.js"></script>
 <script src="index.js"></script>
