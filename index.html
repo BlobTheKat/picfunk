@@ -42,11 +42,8 @@
 				scroll-snap-align: start;
 				flex-shrink: 0;
 			}
-			html:after{
-				content: '';
-				scroll-snap-align: end;
-			}
 		}
+		html > div{ scroll-snap-align: end; }
 		@media(prefers-color-scheme:dark){body{--a:#000;--b:#fff;--at:#0006;--at2:#0000;--bt: #fff6;--fb:brightness(2)}}
 		*{
 			box-sizing:border-box;

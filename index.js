@@ -495,6 +495,7 @@ gifDitherSel.onclick = () => {
 customInput(gifRepeatSel, s => !/\D/.test(s))
 gifRepeatSel.onchange = () => { gifRepeat = +gifRepeatSel.value }
 const fs = $('#fs')
+if(!document.fullscreenEnabled) fs.remove()
 fs.onclick = () => gl.canvas.requestFullscreen()
 fs.oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
 	setsize(gl.canvas.offsetWidth * devicePixelRatio, gl.canvas.offsetHeight * devicePixelRatio)
@@ -624,3 +625,5 @@ function toast(msg, color = '#0f0', click = null){
 	toasts.scrollTo(0, 1e9)
 	return n
 }
+
+document.documentElement.appendChild(document.createElement('div'))
