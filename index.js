@@ -475,6 +475,7 @@ format.onclick = () => {
 	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
 		expFormat == 'GIF' ? 'block' : 'none'
 }
+quality.ontouchstart = e => e.preventDefault()
 quality.onpointerdown = e => quality.setPointerCapture(e.pointerId)
 quality.onpointerup = e => quality.releasePointerCapture(e.pointerId)
 quality.onpointermove = e => {
