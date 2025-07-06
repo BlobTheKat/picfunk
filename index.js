@@ -344,7 +344,7 @@ const tokens = Object.entries({
 	macro: /(^|\n)#[^\n]+/y,
 	int: /(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi,
 	float: /(\d+\.\d*|\.\d+)(e\d+)?f?/yi,
-	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|img|void)(?!\w)/y,
+	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void)(?!\w)/y,
 	keyword: /(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y,
 	storage: /(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y,
 	symbols: /[()[\]!%^&*:<>,/?|~\-=+]+/y,
