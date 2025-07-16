@@ -90,7 +90,7 @@
 			text-overflow: ellipsis;
 			border-radius: 0;
 		}
-		.tex > .del{
+		.del{
 			position: absolute;
 			top: -2px; right: 6px;
 			color: black;
@@ -98,31 +98,42 @@
 			-webkit-text-stroke: 4px black;
 			cursor: pointer;
 		}
-		.tex > .wx, .tex > .wy, .tex > .mg{
+		.wx, .wy, .mg{
 			position: absolute;
-			top: 2px; right: 27px;
-			color: black;
-			font: bold 15.5px Arial;
-			-webkit-text-stroke: 4px black;
+			top: 3px; right: 25px;
+			background: black;
+			width: 16px; height: 16px;
 			cursor: pointer;
 		}
-		.tex > .wx:after, .tex > .wy:after, .tex > .mg:after{
-			content: attr(data-c);
-			color: white;
-			-webkit-text-stroke: 0;
-			position: absolute;
-			left: 0;
+		.mg:after{
+			content: ""; display: block;
+			width: 100%; height: 100%;
+			background: white;
+			clip-path: path("M2 14 2 12.6 7.3 12.6 7.3 2 14 2 14 3.4 8.7 3.4 8.7 14Z");
 		}
-		.tex > .wx{ right: 44px; }
-		.tex > .mg{ right: 61px; }
-		.tex > .dim{
+		.mg.linear:after{ clip-path: path("M3 14 2 13 13 2 14 3 3 14Z"); }
+		.wx, .wy{
+			--d: right;
+			background: linear-gradient(to var(--d), black, white, white);
+			border: 2px black solid;
+		}
+		.wx.repeat, .wy.repeat{
+			background: linear-gradient(to var(--d), black, white 50%, black 50%, white);
+		}
+		.wx.repeat-mirror, .wy.repeat-mirror{
+			background: linear-gradient(to var(--d), black, white, black);
+		}
+		.wy{ --d: top; }
+		.wx{ right: 45px; }
+		.mg{ right: 65px; }
+		.dim{
 			position: absolute;
 			top: 2px; left: 2px;
 			cursor: pointer;
 			font-size: 14px;
 			text-shadow: 0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a),0 0 3px var(--a);
 		}
-		.tex > .del:after{
+		.del:after{
 			content: 'x';
 			color: red;
 			-webkit-text-stroke: 0;
@@ -156,13 +167,13 @@
 			flex-flow: row nowrap;
 			gap: 10px;
 			overflow-x: auto;
-			pointer-events: all;
 			padding: 10px;
 			height: 50px;
 			background: linear-gradient(to bottom, var(--at2), var(--a));
 		}
 		#info > div > *{
 			flex-shrink: 0;
+			pointer-events: all;
 		}
 		#info input{
 			background: #0000;
@@ -386,17 +397,40 @@
 			pointer-events: all;
 		}
 		#toasts::-webkit-scrollbar{ width: 0; height: 0; }
+		#saveload{
+			display: flex;
+			width: calc(100% + 16px);
+			margin: 8px -8px;
+			gap: 2px;
+		}
+		#saveload > div{
+			flex: 1;
+			font-size: 14px;
+			padding: 4px 0;
+			background: #8884;
+			text-align: center;
+			cursor: pointer;
+			border-bottom: 2px #8884 solid;
+		}
+		#saveload > div:hover{ background: #8886; }
+		#canvashover{
+			position: absolute;
+			background: var(--at);
+			padding: 4px;
+			white-space: pre-wrap;
+			pointer-events: none;
+			opacity: 0.5;
+		}
 	</style>
 </head>
 <pre style="display:none;visibility:hidden;">
-	<input type="file" id="uploadinput">
 	<div class="tex">
 		<img src draggable="false" />
 		<input /> <span class="del">x</span>
 		<span class="dim" title="Use this size"></span>
-		<span class="wx" data-c="R">R</span>
-		<span class="wy" data-c="R">R</span>
-		<span class="mg" data-c="L">L</span>
+		<span class="wx repeat"></span>
+		<span class="wy repeat"></span>
+		<span class="mg linear"></span>
 	</div>
 </pre>
 <body>
@@ -406,11 +440,16 @@
 	</div>
 	<div id="sources">
 		<div id="logo">icfunk</div>
-		<div id="brand"><a href="https://github.com/BlobTheKat/picfunk">Github</a> &bullet; <a href="https://ko-fi.com/blobbybot">Leave a tip</a></div>
+		<div id="brand"><a href="https://github.com/BlobTheKat/picfunk">Github</a> &bullet; <a href="https://buy.stripe.com/cNibJ0gPg84g6eTeVb9bO00" target="_blank">Leave a tip</a></div>
+		<div id="saveload">
+			<div id="load">Load .pf</div>
+			<div id="save">Save .pf</div>
+		</div>
 		<img draggable="false" id="upload" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAACNJREFUGFdjZMACGGFiHR0d/ysqKsB8MAESgEmCJHCrRDcWAGuODAaFTh0eAAAAAElFTkSuQmCC" style="cursor:pointer;margin-bottom:50px;width:160px;image-rendering: pixelated;" />
 	</div>
 	<div id="right">
 		<canvas id="canvas"></canvas>
+		<div id="canvashover"></div>
 		<div id="info"><div>
 			<span style="border-bottom:1.5px var(--b) solid;"><input min="1" id="w" placeholder="720" /> * <input min="1" id="h" placeholder="450" /></span>
 			<span style="border-bottom:1.5px var(--b) solid;">t&lt;<input min="0" id="t" placeholder=" ∞ " /></span>
@@ -421,7 +460,7 @@
 			<div id="formatopts">
 				<div id="quality" style="display: none;--q: 100%">Quality: 100%</div>
 				<div id="gifdither" style="cursor: pointer;display:none">Dither: None</div>
-				<div style="display:none">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
+				<div style="display:none;gap:5px">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
 			</div>
 			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAFZJREFUOE9jZMABOjo6/uOSwyfOODwMrKiowOkTkA+Rg4coLw+sgeTGJrKrUbw8tAwkJfCJ8vKAGogrhzEiRwopLhz8BuLyDdleHhgDSSlQiXLhoDQQACirfFfXk7/JAAAAAElFTkSuQmCC" id="copy" title="Copy output">
 			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAHFJREFUOE9jZCAAOjo6/iMrqaioYMSnBa8kSOOogQzDKAzRY5NQckKXhwUFPNlQ3UBsaY5YVyJHFEbCJtWl6LGONacQayi2JIQz6xEyFFd6xJuXcRmKL3HTv3BAjn1C2Q6klqALiU06MHWMhAJ/+BkIAL4kR9oTiJ5AAAAAAElFTkSuQmCC" id="download" title="Save output">

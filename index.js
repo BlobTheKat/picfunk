@@ -27,63 +27,73 @@ const fmtSize = size => {
 	return (size/1073741824).toFixed(2) + 'GiB'
 }
 
-function addFile(file, nm = file.name){
-	if(sourcesContainer.childElementCount > maxTextures) return
-	if(!file.type.startsWith('image/')) return toast("Not an image: " + extOf(file), '#f00')
+function clearFiles(refresh){
+	for(const t of images.values()){
+		t.n.remove()
+		gl.activeTexture(gl.TEXTURE0+t.id)
+		gl.bindTexture(gl.TEXTURE_2D, null)
+		gl.deleteTexture(t)
+	}
+	images.clear()
+	uploadBtn.hidden = false
+	if(refresh) code()
+}
+
+function addFile(file, nm = file.name, opts = 0){
+	if(sourcesContainer.childElementCount > maxTextures) return toast('Maximum number of textures reached ('+maxTextures+')', '#ff0')
+	if(file.name && !file.type.startsWith('image/')) return toast("Not an image: " + extOf(file), '#f00')
 	const n = texTemplate.cloneNode(true)
 	const {0:a,1:b,2:c,3:d,4:e,5:f,6:g} = n.children
 	a.src = URL.createObjectURL(file)
 	let name = b.value = makeName(nm)
 	let t = null
-	a.onerror = err => toast("Parsing image: " + err.message, '#f00')
+	a.onerror = () => toast("Parsing image failed", '#f00')
 	a.onload = () => {
-		if(t) return
-		toast((file.name || '(From URL)') + ': ' + fmtSize(file.size))
+		if(!(opts&256)) toast((file.name || '(From URL)') + ': ' + fmtSize(file.size))
 		d.textContent = a.naturalWidth+'x'+a.naturalHeight
 		if(!images.size) setsize(a.naturalWidth, a.naturalHeight)
 		d.onclick = () => setsize(a.naturalWidth, a.naturalHeight)
 		t = gl.createTexture()
-		let i = 0; while(usedTextures[i]==-1)i++
+		let i = 0; while(usedTextures[i]==-1) i++
 		const j = 31-Math.clz32(~usedTextures[i]&usedTextures[i]+1)
-		t.id = i<<5|j
+		t.id = i<<5|j; t.opts = opts; t.blob = file; t.n = n
 		usedTextures[i] |= 1<<j
 		gl.activeTexture(gl.TEXTURE0+t.id)
 		gl.bindTexture(gl.TEXTURE_2D, t)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, opts&1 ? gl.NEAREST : gl.LINEAR)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, opts&4 ? gl.CLAMP_TO_EDGE : opts&2 ? gl.MIRRORED_REPEAT : gl.REPEAT)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, opts&16 ? gl.CLAMP_TO_EDGE : opts&8 ? gl.MIRRORED_REPEAT : gl.REPEAT)
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
 		if(maxAniso)
 			gl.texParameteri(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, maxAniso)
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, a)
 		gl.generateMipmap(gl.TEXTURE_2D)
 		images.set(name, t)
+		sourcesContainer.insertBefore(n, uploadBtn)
 		code()
 	}
 	e.onclick = () => {
-		if(!t) return
-		const id = e.dataset.c == 'R' ? 'M' : e.dataset.c == 'M' ? 'C' : 'R'
-		e.dataset.c = e.textContent = id
+		const repeat = e.classList.replace('repeat', 'repeat-mirror') ? 1 : e.classList.toggle('repeat-mirror') ? (e.classList.replace('repeat-mirror', 'repeat'), 0) : 2
+		t.opts = t.opts&~6|repeat<<1
 		gl.activeTexture(gl.TEXTURE0+t.id)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, id == 'R' ? gl.REPEAT : id == 'M' ? gl.MIRRORED_REPEAT : gl.CLAMP_TO_EDGE)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, repeat == 2 ? gl.CLAMP_TO_EDGE : repeat ? gl.MIRRORED_REPEAT : gl.REPEAT)
 		if(!tLoc) draw()
 	}
 	f.onclick = () => {
-		if(!t) return
-		const id = f.dataset.c == 'R' ? 'M' : f.dataset.c == 'M' ? 'C' : 'R'
-		f.dataset.c = f.textContent = id
+		const repeat = f.classList.replace('repeat', 'repeat-mirror') ? 1 : f.classList.toggle('repeat-mirror') ? (f.classList.replace('repeat-mirror', 'repeat'), 0) : 2
+		t.opts = t.opts&~24|repeat<<3
 		gl.activeTexture(gl.TEXTURE0+t.id)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, id == 'R' ? gl.REPEAT : id == 'M' ? gl.MIRRORED_REPEAT : gl.CLAMP_TO_EDGE)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, repeat == 2 ? gl.CLAMP_TO_EDGE : repeat ? gl.MIRRORED_REPEAT : gl.REPEAT)
 		if(!tLoc) draw()
 	}
 	g.onclick = () => {
-		if(!t) return
-		const id = g.dataset.c == 'L' ? 'N' : 'L'
-		g.dataset.c = g.textContent = id
+		const linear = g.classList.toggle('linear')
+		t.opts = t.opts&~1|!linear
 		gl.activeTexture(gl.TEXTURE0+t.id)
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, id == 'L' ? gl.LINEAR : gl.NEAREST)
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, linear ? gl.LINEAR : gl.NEAREST)
 		if(!tLoc) draw()
 	}
 	b.onchange = () => {
-		if(!t) return void(b.value = name)
 		images.delete(name)
 		name = b.value = makeName(b.value)
 		images.set(name, t)
@@ -93,14 +103,11 @@ function addFile(file, nm = file.name){
 		n.remove()
 		images.delete(name)
 		if(images.size == maxTextures-1) uploadBtn.hidden = false
-		if(t){
-			gl.activeTexture(gl.TEXTURE0+t.id)
-			gl.bindTexture(gl.TEXTURE_2D, null)
-			gl.deleteTexture(t)
-		}else t=1
+		gl.activeTexture(gl.TEXTURE0+t.id)
+		gl.bindTexture(gl.TEXTURE_2D, null)
+		gl.deleteTexture(t)
 		code()
 	}
-	sourcesContainer.insertBefore(n, uploadBtn)
 	if(sourcesContainer.childElementCount > maxTextures) uploadBtn.hidden = true
 }
 function addFromTransfer({items}){
@@ -121,10 +128,9 @@ document.body.ondrop = e => (e.preventDefault(),addFromTransfer(e.dataTransfer))
 
 document.currentScript.remove()
 
-const uploadBtn = $('#upload'), uploadInput = $('#uploadinput')
-uploadBtn.onclick = () => {
-	uploadInput.click()
-}
+const uploadBtn = $('#upload'), uploadInput = document.createElement('input')
+uploadInput.type = 'file'
+uploadBtn.onclick = () => uploadInput.click()
 uploadInput.onchange = () => {
 	for(const f of uploadInput.files) addFile(f)
 	uploadInput.value = ''
@@ -179,11 +185,10 @@ function code(){
 	errors.length = 0
 	const a = performance.now()
 	gl.shaderSource(fsh, `#version 300 es
-precision mediump float;
-uniform float t;
+precision highp float;
+uniform float t, tMax;
 uniform ivec2 isize;
 uniform vec2 size;
-uniform float tMax;
 ${images.size?'struct GL_TexturesType{sampler2D '+[...images.keys()]+';};uniform GL_TexturesType images;':''}
 in vec2 GL_uv;
 out vec4 GL_col;
@@ -257,7 +262,7 @@ function setsize(w, h){
 	iW.value = w; iH.value = h
 	iW.oninput(); iH.oninput()
 	gl.viewport(0, 0, w, h)
-	panelH = Math.round(Math.min(h/w*(document.body.offsetWidth-176), document.body.offsetHeight/2-8))
+	panelH = Math.round(Math.max(100, Math.min(h/w*(document.body.offsetWidth-176), document.body.offsetHeight/2-8)))
 	document.body.style.setProperty('--h', panelH+'px')
 	if(!tLoc) draw()
 }
@@ -269,7 +274,7 @@ let mspfAvg = 0
 function drawTime(dt){
 	if(dt > 184400) return
 	mspfAvg += (dt-mspfAvg)/30
-	mspf.textContent = 'draw: '+mspfAvg.toFixed(2)+'ms'
+	mspf.textContent = mspfAvg.toFixed(2).slice(mspfAvg<=.995)+'ms'
 }
 let raf = 0
 let overdraw = 0
@@ -344,6 +349,7 @@ const tokens = Object.entries({
 	macro: /(^|\n)#[^\n]+/y,
 	int: /(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi,
 	float: /(\d+\.\d*|\.\d+)(e\d+)?f?/yi,
+	invalid: /gl_\w+|__\w+|(?:union|common|partition|active|asm|class|union|enum|typedef|template|this|packed|goto|inline|noinline|volatile|public|static|extern|external|interface|unsigned|input|output)(?!\w)/y,
 	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void)(?!\w)/y,
 	keyword: /(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y,
 	storage: /(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y,
@@ -362,10 +368,10 @@ input.oninput = () => {
 		if((e += t.length) <= i){ L=t.length; continue }
 		e = i-e+t.length+L
 		i -= e; l += e
-		if(j>1)j--
+		if(j>1) j--
 		break
 	}
-	if(j==count)i -= L, l += L,j>1&&j--
+	if(j==count) i -= L, l += L,j>1&&j--
 	e = 0
 	const v = input.value; let inv = 0
 	t: while(i+inv < v.length){
@@ -470,10 +476,10 @@ format.onclick = () => {
 	format.textContent = expFormat
 	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
 	quality.style.display = expFormat == 'PNG' ? 'none' : ''
+	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
+		expFormat == 'GIF' ? 'flex' : 'none'
 	oldToast && oldToast.remove()
 	oldToast = toast('Export format: '+expFormat, '#f08')
-	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
-		expFormat == 'GIF' ? 'block' : 'none'
 }
 quality.ontouchstart = e => e.preventDefault()
 quality.onpointerdown = e => quality.setPointerCapture(e.pointerId)
@@ -549,9 +555,9 @@ function download(method = saveBlob){
 	gl.canvas.toBlob(method, f, expQuality)
 }
 
-function saveBlob(a){
+function saveBlob(a, name = 'picfunk-output'){
 	const l = document.createElement('a')
-	l.download = 'picfunk-output'
+	l.download = name
 	l.href = URL.createObjectURL(a)
 	l.click()
 	URL.revokeObjectURL(l.href)
@@ -564,12 +570,154 @@ $('#copy').onclick = download.bind(null, a => {
 	})
 })
 
+const chover = $('#canvashover')
+
+gl.canvas.onmousemove = e => {
+	const rw = gl.canvas.offsetWidth, rh = gl.canvas.offsetHeight
+	const w = gl.canvas.width, h = gl.canvas.height
+	const ra = rw*h-w*rh
+	let x = e.layerX, y = rh-e.layerY
+	if(ra > 0) x -= ra/h*.5
+	else y -= (rh-h/w*rw)*.5
+	const scale = Math.max(w/rw,h/rh)
+	x *= scale; y *= scale
+	if(Math.min(x,y, w-x, h-y) < 0){
+		chover.style.display = 'none'
+		return
+	}
+	chover.style.display = ''
+	chover.textContent = `vec2(${(x/w).toFixed(3)},${(y/h).toFixed(3)})\nivec2(${Math.round(x)},${Math.round(y)})`
+	const r = x < w*.5
+	chover.style.right = r ? '0' : ''
+	chover.style.textAlign = r ? 'right' : ''
+	chover
+}
+gl.canvas.onmouseout = () => { chover.style.display = 'none' }
+
+const uploadInput2 = document.createElement('input')
+uploadInput2.type = 'file'
+uploadInput2.accept = '.pf'
+
+const enc = new TextEncoder(), dec = new TextDecoder(), rd = new FileReader()
+const helper = new Uint8Array(8); helper[0] = 255
+$('#load').onclick = () => uploadInput2.click()
+
+function parsePfFileContents(buf, blob, off = 0){
+	let i = 0
+	clearFiles(false)
+	while(true){
+		let j = buf.indexOf(255, i)
+		if(j < 0) return 'unterminated string'
+		if(j == i){ i++; break }
+		const type = dec.decode(buf.subarray(i, i = j)); i++
+		j = buf.indexOf(255, i)
+		if(j < 0) return 'unterminated string'
+		const name = dec.decode(buf.subarray(i, i = j)); i++
+		if(i + 7 >= buf.byteLength) return 'early truncation'
+		const opts = buf[i++]
+		const len = (buf[i++]<<16|buf[i++]<<8|buf[i++])*16777216|(buf[i++]<<16|buf[i++]<<8|buf[i++])
+		const file = blob.slice(off, off += len, type)
+		if(off > blob.size) return 'early truncation'
+		addFile(file, name, opts|256)
+	}
+	const block = new DataView(buf.buffer, buf.byteOffset+i, 16); i += 16
+	setsize(block.getUint16(0)+1, block.getUint16(2)+1)
+	iT.value = (maxTime = block.getFloat32(4)) || ''
+	iF.value = block.getFloat32(8) || ''; iF.onchange()
+	iT.oninput(); iF.oninput()
+	const fi = block.getUint8(12)
+	expFormat = fi < formats.length ? formats[fi] : 'GIF'
+	format.textContent = expFormat
+	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
+	quality.style.display = expFormat == 'PNG' ? 'none' : ''
+	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
+		expFormat == 'GIF' ? 'flex' : 'none'
+	gifRepeat = block.getUint16(14)+1
+	if(expFormat == 'GIF'){
+		gifDither = dithers[fi>>1^127]
+		gifDitherSel.textContent = 'Dither: ' + ditherTexts[fi>>1^127]
+		if(fi&1) gifRepeat = 0
+	}else gifRepeat = 0
+	gifRepeatSel.value = gifRepeat
+	expQuality = block.getUint8(13)/255
+	quality.style.setProperty('--q', (expQuality*100).toFixed(2)+'%')
+	quality.textContent = 'Quality: '+Math.round(expQuality*100)+'%'
+	tOrigin = performance.now()
+	while(i < buf.length){
+		let j = buf.indexOf(255, i)
+		if(j < 0) return 'unterminated string'
+		const name = dec.decode(buf.subarray(i, i = j)); i++
+		j = buf.indexOf(255, i)
+		if(j < 0) return 'unterminated string'
+		const payload = dec.decode(buf.subarray(i, i = j)); i++
+		if(!name) input.value = payload
+	}
+	input.oninput()
+	code()
+	return ''
+}
+
+uploadInput2.onchange = () => {
+	const f = uploadInput2.files[0]
+	uploadInput2.value = ''
+	const err = v => { toast('Not a valid .pf file: '+v, '#f00') }
+	if(f.size < 8) return err('too small for 8-byte header')
+	rd.onload = () => {
+		const header = new Uint8Array(rd.result)
+		if(header[0] != 255 || header[1] != 80 || header[2] != 70) return err('Invalid magic header')
+		const sz = (header[3]<<8|header[4])*16777216+(header[5]<<16|header[6]<<8|header[7])
+		if(f.size < 8+sz) return err('header length field too large')
+		rd.onload = () => {
+			const e = parsePfFileContents(new Uint8Array(rd.result), f, rd.result.byteLength + 8)
+			if(e) return err(e)
+			toast('Imported '+fmtSize(f.size)+'!', '#f08')
+		}
+		rd.readAsArrayBuffer(f.slice(8, 8+sz))
+	}
+	rd.onerror = () => { rd.onload = null; err('FileReader error') }
+	rd.readAsArrayBuffer(f.slice(0, 8))
+}
+const formats = ['PNG', 'JPEG', 'WEBP']
+$('#save').onclick = () => {
+	const res = [helper], res2 = [], ff = helper.subarray(0,1)
+	let sz = 0
+	for(const {0:name,1:img} of images){
+		helper[1] = img.opts
+		const sizel = img.blob.size|0, sizeh = Math.floor(img.blob.size/4294967296)
+		helper[2] = sizeh>>8; helper[3] = sizeh; helper[4] = sizel>>24
+		helper[5] = sizel>>16; helper[6] = sizel>>8; helper[7] = sizel
+		const narr = enc.encode(name), narr2 = enc.encode(img.blob.type)
+		sz += narr.length + narr2.length + 9
+		res.push(narr2, ff, narr, helper.slice())
+		res2.push(img.blob)
+	}
+	const block = new DataView(new ArrayBuffer(16))
+	block.setUint16(0, gl.canvas.width-1)
+	block.setUint16(2, gl.canvas.height-1)
+	block.setFloat32(4, maxTime)
+	block.setFloat32(8, +iF.value || 0)
+	const fi = formats.indexOf(expFormat)
+	block.setUint8(12, fi >= 0 ? fi : ~dithers.indexOf(gifDither)<<1|!gifRepeat)
+	block.setUint8(13, Math.round(expQuality*255))
+	block.setUint16(14, gifRepeat-1)
+	const code = enc.encode(input.value)
+	res.push(ff, block.buffer, ff, code, ff); sz += code.length + 19
+	for(const i of res2) res.push(i)
+	// \xFFPF
+	helper[1] = 80; helper[2] = 70; helper[3] = Math.floor(sz/4294967296)
+	helper[4] = sz>>24; helper[5] = sz>>16; helper[6] = sz>>8; helper[7] = sz
+	const b = new Blob(res, {type: '@file'}), d = new Date()
+	const pstr = a => a.toString().padStart(2,'0')
+	toast('Exported '+fmtSize(b.size)+'!', '#f08')
+	saveBlob(b, `picfunk-${d.getFullYear()}-${pstr(d.getMonth())}-${pstr(d.getDate())}-at-${pstr(d.getHours())}-${pstr(d.getMinutes())}.pf`)
+}
+
 onkeydown = e => {
-	if(e.keyCode===83&&e.metaKey) e.preventDefault(),download()
+	if(e.keyCode == 83 && e.metaKey) e.preventDefault(), download()
 }
 {
 	const v = `#version 300 es
-precision mediump float;
+precision highp float;
 
 const float PI = 3.141592653589793;
 const float E = 2.718281828459045;
@@ -578,10 +726,12 @@ const float SQRT2 = 1.4142135623730951;
 // Output size
 uniform vec2 size;
 uniform ivec2 isize;
-// Struct of all images (address using images.<img_name>)
+// Struct of all images
+//   e.g texture(images.background, uv)
+//   e.g texelFetch(images.atlas1, coords>>1, 1)
 uniform struct images;
 // Time variable for animations
-uniform float t;
+uniform float t, tMax;
 
 void main(){ gl_FragColor = main(gl_FragCoord.xy / vec2(size)); }`; let inv = 0, i = 0
 	const highlighted1 = $('#txt1')
