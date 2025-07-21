@@ -328,7 +328,7 @@ const macro = [
 const def = [
 	/\/\/.*|\/\*([^*]|\*(?!\/))*(\*\/|$)/y, styles.comment,
 	/(^|\n)\s*#\w+/y, stack => (stack[stack.length-1] = macro, styles.macro),
-	/(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi, styles.int,
+	/(false|true)(?!\w)|(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi, styles.int,
 	/(\d+\.\d*|\.\d+)(e\d+)?f?/yi, styles.float,
 	/gl_\w+|__\w+|(?:union|common|partition|active|asm|class|union|enum|typedef|template|this|packed|goto|inline|noinline|volatile|public|static|extern|external|interface|unsigned|input|output)(?!\w)/y, styles.invalid,
 	/([uib]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void|bool)(?!\w)/y, styles.types,
