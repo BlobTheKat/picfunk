@@ -319,7 +319,7 @@
 		}
 		rehighlight(){
 			if(this.#rhScheduled) return
-			this.#os = this.#oe = 0
+			this.#os = this.#oe = this.#ol = 0
 			const ch = this.#el.children; let l = ch.length
 			while(l) ch[--l].remove()
 			this.#rhScheduled = requestAnimationFrame(this.#textarea.oninput)
