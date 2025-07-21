@@ -5,8 +5,8 @@
 	document.adoptedStyleSheets.push(gsheet)
 	sheet.insertRule('textarea{z-index:1;padding:0;padding-left:max(1ch,var(--min-gutter) * 1ch);margin:0;inset:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#999;white-space:pre-wrap;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;text-size-adjust: none;-webkit-text-size-adjust: none;touch-action:pan-y;overflow-wrap:inherit;overflow:clip;grid-area:1/1}', 0)
 	sheet.insertRule('textarea::selection{background: Highlight}',1)
-	sheet.insertRule('div{min-height:1lh;counter-increment:l}',2)
-	sheet.insertRule('label{box-sizing:border-box;position:absolute;left:0;width:calc(var(--g) + 0.25lh);display:block;white-space:pre;color:#808080;padding-right:0.25lh;clip-path:polygon(0 0, calc(100% - 0.25lh) 0, 100% 50%, calc(100% - 0.25lh) 100%, 0 100%);z-index:2;cursor:pointer}',3)
+	sheet.insertRule('div{min-height:1lh}',2)
+	sheet.insertRule('label{box-sizing:border-box;position:absolute;left:0;width:calc(var(--g) + 0.25lh);display:block;white-space:pre;color:#808080;padding-right:0.25lh;clip-path:polygon(0 0, calc(100% - 0.25lh) 0, 100% 50%, calc(100% - 0.25lh) 100%, 0 100%);z-index:2;cursor:pointer;counter-increment:l}',3)
 	sheet.insertRule('label::before{content:counter(l);display:inline-block;width:var(--g);text-align:right}',4)
 	sheet.insertRule('main{grid-area:1/1;--g:max(1ch,var(--min-gutter) * 1ch);padding-left:var(--g)}',5)
 	sheet.insertRule('label[data-message]:hover::after{content:attr(data-message);display:inline-block;padding-left:0.5lh;white-space:pre-wrap;vertical-align:top;width:calc(100% - var(--g) - 0.25lh)}',6)
@@ -29,20 +29,21 @@
 			this.#firstLine = Math.floor(+a || 0)
 			this.#el.style.counterReset = 'l '+(this.#firstLine-1)
 		}
-		get visibleLineCount(){ return this.#el.childNodes.length }
+		get visibleLineCount(){ return this.#el.childNodes.length*.5 }
 		get defaultLineStyle(){ return this.#lineStyle2 }
 		set defaultLineStyle(cl){
 			const old = this.#lineStyle
 			this.#lineStyle = cl = (this.#lineStyle2 = typeof cl == 'symbol' ? cl : null) ? cl.description : ''
 			if(cl == old) return
-			for(const n of this.#el.childNodes){
-				const c = n.firstChild.classList
+			const ch = this.#el.childNodes
+			for(let i = ch.length-2; i >= 0; i-=2){
+				const c = ch[i].classList
 				old ? cl ? c.replace(old, cl) : c.remove(old) : cl && c.add(cl)
 			}
 		}
 		setLineStyle(line, style = null, message = null){
 			style = typeof style == 'symbol' ? style.description : this.#lineStyle
-			const el = this.#el.childNodes[line - this.#firstLine]?.firstChild
+			const el = this.#el.childNodes[Math.floor(line - this.#firstLine)*2]
 			if(el){
 				el.className = style, typeof message == 'string' ? el.dataset.message = message : delete el.dataset.message
 				return true
@@ -51,18 +52,18 @@
 		}
 		resetAllLineStyles(){
 			const ch = this.#el.childNodes
-			for(let i = ch.length-1; i >= 0; i--){
-				const el = ch[i].firstChild
+			for(let i = ch.length-2; i >= 0; i-=2){
+				const el = ch[i]
 				el.className = this.#lineStyle, typeof message == 'string' ? el.dataset.message = message : delete el.dataset.message
 			}
 		}
 		getLineStyle(line = 0){
-			const cl = this.#el.childNodes[line - this.#firstLine]?.firstChild.classList
+			const cl = this.#el.childNodes[Math.floor(line - this.#firstLine)*2]?.classList
 			if(!cl || !cl.length) return null
 			return Symbol.for(cl[0])
 		}
 		getLineMessage(line = 1){
-			const el = this.#el.childNodes[line - this.#firstLine]?.firstChild
+			const el = this.#el.childNodes[Math.floor(line - this.#firstLine)*2]
 			if(!el) return null
 			return el.dataset.message ?? null
 		}
@@ -113,7 +114,6 @@
 			super()
 			this.#sh.adoptedStyleSheets.push(sheet)
 			this.#sh.appendChild(this.#el)
-			this.#el.setAttribute('inert','')
 			this.#sh.append(this.#textarea)
 			this.#textarea.spellcheck = false
 			this.#textarea.onchange = this.compile
@@ -140,9 +140,9 @@
 				}
 				const v = this.#textarea.value
 				let i = Math.min(this.#os, this.#os = this.#textarea.selectionStart)
-				let e = 0, j = 0, k = 2, l = 0
+				let e = 0, j = 1, k = 1, l = 0
 				const ch = this.#el.children, count = ch.length-1
-				let el = ch[0], ch2
+				let el = ch[1], ch2
 				let state = null, sl = 0, sz = null
 				const setState = () => {
 					if(!stack.length){ stack.push(state); return }
@@ -153,25 +153,26 @@
 				// Allows one token of lookahead leniency for regexes
 				if(count<0){
 					const el2 = el = document.createElement('div')
+					el2.setAttribute('inert', '')
 					const lab = document.createElement('label')
 					if(this.#lineStyle) lab.classList.add(this.#lineStyle)
-					el2.append(lab, '')
+					el2.append('')
 					el2.stack = stack = [this.#basePattern]
 					i = el2.l = 0
 					ch2 = el2.childNodes
-					this.#el.appendChild(el2)
-				}else for(;j<=count;j++){
+					this.#el.append(lab, el2)
+				}else for(;j<=count;j+=2){
 					el = ch[j]; let l1 = el.l+(j==count)
 					if((e += l1) <= i) continue
 					e -= l1
 					ch2 = el.childNodes; let len = ch2.length-1
-					if(len > 1 && e + ch2[2].l >= i && j) do{
+					if(len && e + ch2[1].l >= i && j>1) do{
 						// prev token will be on prev line!
-						l1 = (el = ch[--j]).l, e -= l1, ch2 = el.childNodes, len = ch2.length-1
-					}while(len < 2 && j)
+						l1 = (el = ch[j -= 2]).l, e -= l1, ch2 = el.childNodes, len = ch2.length-1
+					}while(len < 1 && j>1)
 					stack = el.stack.slice()
-					let otok = null, l2 = 0; k = 2
-					if(len>1) for(;;){
+					let otok = null, l2 = 0; k = 1
+					if(len) for(;;){
 						const tok = ch2[k], l = tok.l
 						if(k == len || (e + l) > i) break
 						e += l2 = l
@@ -179,15 +180,15 @@
 							let t = otok.textContent
 							if(k == len){
 								let j2 = j, el2
-								do el2 = ch[++j2].childNodes, t += '\n', t += el2[1].textContent
-								while(el2.length <= 2)
+								do el2 = ch[j2+=2].childNodes, t += '\n', t += el2[0].textContent
+								while(el2.length <= 1)
 							}
 							otok.f(stack, t)
 						}
 						otok = tok; k++
 					}
 					i = e
-					if(k > 2) i -= l2, k--
+					if(k > 1) i -= l2, k--
 					break
 				}
 				setState()
@@ -222,35 +223,49 @@
 							else if(typeof style == 'string') n.style = style
 							else if(typeof style == 'object') Object.assign(n.style, style)
 						}
-						const el2 = document.createElement('div')
-						const lab = document.createElement('label')
-						if(this.#lineStyle) lab.classList.add(this.#lineStyle)
-						el2.append(lab, n)
-						let l1 = 0
-						this.#el.insertBefore(el2, el.nextSibling)
-						while(ch2.length > k){ const n = ch2[k]; el2.append(n); l1 += n.l; el.l -= n.l }
-						el2.stack = stack.slice(); el2.l = l1
-						ch2 = (el = el2).childNodes
-						tok = ch2[k = 2]; j++
+						let el2, lab
+						if(excess.length){
+							({0: lab, 1: el2} = excess.splice(0, 2))
+							el2.firstChild.replaceWith(n)
+							el2.stack = stack.slice()
+						}else{
+							el2 = document.createElement('div')
+							el2.setAttribute('inert', '')
+							lab = document.createElement('label')
+							if(this.#lineStyle) lab.classList.add(this.#lineStyle)
+							el2.append(n)
+							let l1 = 0
+							this.#el.insertBefore(el2, el.nextSibling)
+							this.#el.insertBefore(lab, el2)
+							while(ch2.length > k){ const n = ch2[k]; el2.append(n); l1 += n.l; el.l -= n.l }
+							el2.stack = stack.slice(); el2.l = l1
+						}
+						ch2 = (el = el2).childNodes; j+=2
+						tok = ch2[k = 1]
 					}
 				}
-				const remTokens = () => { while(tok && l > 0){
-					el.l -= tok.l; l -= tok.l; tok.remove()
+				const excess = []
+				const remTokens = () => { while(l > 0){
+					let x = null
+					if(tok) el.l -= tok.l
+					else if(excess.length){
+						x = excess[excess.length-1]
+						tok = x.childNodes[1]
+						if(!tok) break
+						x.l -= tok.l
+					}else break
+					l -= tok.l; tok.remove()
 					let t = tok.textContent, f = tok.f
-					if(k == ch2.length){
-						let el2
-						while(el2 = ch[j+1]){
-							el2.remove()
-							if(f) t += '\n', t += el2.childNodes[1].textContent
-							if(el2.childNodes.length > 2) break
+					if(x ? x.childNodes.length == 1 : k == ch2.length){
+						let el2, j2 = j+excess.length
+						while(el2 = ch[j2+2]){
+							excess.push(ch[j2+1], el2); j2 += 2
+							if(f) t += '\n', t += el2.childNodes[0].textContent
+							if(el2.childNodes.length > 1) break
 						}
-						if(el2){
-							const ch3 = el2.childNodes
-							while(ch3.length > 2){ const n = ch3[2]; el.append(n); el.l += n.l }
-						}
-					}
+						tok = undefined
+					}else tok = x ? undefined : ch2[k]
 					if(f) f(stack2, t)
-					tok = ch2[k]
 				} }
 				remTokens()
 				l -= e; let inv = 0
@@ -262,33 +277,36 @@
 						const len = r.lastIndex-i
 						if(!len && !r.flags.includes('y')){ console.error("Regex %s doesn't have the y flag", r); continue }
 						l += len
+						remTokens()
 						if(inv) addToken(v.slice(i, i+inv), sz)
 						addToken(v.slice(i+inv, i += len), state[q+1])
-						remTokens()
 						inv = 0
-						a: if(!l){
-							const l = stack.length
-							if(l != stack2.length) break a
-							for(let i = l-1; i >= 0; i--) if(stack[i] != stack2[i]) break a
-							const w = Math.floor(Math.log10(ch.length))+1.5
-							this.#el.style.setProperty('--g', this.#textarea.style.paddingLeft = `max(var(--min-gutter) * 1ch,${w}ch)`)
-							return
-						}
-						continue t
+						if(l) continue t
+						const sl = stack.length
+						if(sl != stack2.length) continue t
+						for(let i = sl-1; i >= 0; i--) if(stack[i] != stack2[i]) continue t
+						break t
 					}
 					inv++
 				}
-				l += inv
-				remTokens()
-				if(i<v.length) addToken(v.slice(i), sz)
-				const w = Math.floor(Math.log10(ch.length))+1.5
+				if(inv){
+					l += inv
+					remTokens()
+					addToken(v.slice(i), sz)
+				}
+				if(excess.length){
+					const ch = excess[excess.length-1].childNodes
+					for(const n of excess) n.remove()
+					while(ch.length > 1){ const n = ch[1]; el.insertBefore(ch[1], tok), el.l += n.l }
+				}
+				const w = Math.floor(Math.log10(Math.max(-this.#firstLine, ch.length*.5+this.#firstLine-1)))+1.5
 				this.#el.style.setProperty('--g', this.#textarea.style.paddingLeft = `max(var(--min-gutter) * 1ch,${w}ch)`)
 			}
 			this.#el.onclick = ev => {
 				const target = ev.composedPath()[0]
 				if(!(target instanceof HTMLLabelElement)) return
 				const ch = this.#el.childNodes, l = ch.length
-				for(let i = 0; i < l; i++) if(ch[i].firstChild == target){
+				for(let i = 0; i < l; i++) if(ch[i*2] == target){
 					this.onlineclick?.(i+this.#firstLine, this)
 					break
 				}
@@ -303,54 +321,7 @@
 			if(this.#rhScheduled) return
 			this.#os = this.#oe = 0
 			const ch = this.#el.children; let l = ch.length
-			while(l > 1) ch[--l].remove()
+			while(l) ch[--l].remove()
 			this.#rhScheduled = requestAnimationFrame(this.#textarea.oninput)
 		}
-		/*setPattern(list){
-			if(def === undefined) obj = {'': obj}, def=''
-			let toParse = [def]
-			const seen = new Map(), seen2 = new Map
-			seen.set(def, this.#pattern = [''])
-			while(toParse.length){ const n = toParse; toParse = []; for(const s of n){
-				if(!Object.hasOwn(obj, def)){ this.#pattern = ['']; throw new TypeError('Undefined semantic state \''+s+'\'') }
-				const arr = seen.get(s), a2 = obj[s]
-				for(let i = 0; i < a2.le e of obj[s]){
-					if(typeof e == 'string'){
-						let cl = e[0] == '.' ? e.slice(1) : styles.get(e)
-						if(cl === undefined) styles.set(e, cl = 'c'+styles.size), sheet.insertRule(`.${cl}{${e}}`, 4)
-						arr[0] = cl
-						continue
-					}
-					const cache = seen2.get(e)
-					if(cache){ arr.push(cache.a, cache.b, cache.c); continue }
-					let {0: regex, 1: style} = e, setState = arr
-					if(e.length > 2){
-						const push = [0]
-						for(let i = 2; i < e.length; i++){
-							let n = e[i]
-							if(typeof n == 'number'){
-								n >>>= 0
-								if(n < push.length) push.length -= n
-								else push[0] += n-push.length+1, push.length = 1
-								continue
-							}else if(n == null){ push.push(null); continue }
-							let a2 = seen.get(n)
-							if(!a2){
-								seen.set(n, a2 = [''])
-								toParse.push(n)
-							}
-							push.push(a2)
-						}
-						setState = push.length == 2 && !push[0] ? push[1] : push
-					}
-					if(typeof regex == 'string') regex = new RegExp(regex, 'y')
-					if(!regex.flags.includes('y')) regex = new RegExp(regex.source, regex.flags+'y')
-					let cl = style[0] == '.' ? style.slice(1) : styles.get(style)
-					if(cl === undefined) styles.set(style, cl = 'c'+styles.size), sheet.insertRule(`.${cl}{${style}}`, 4)
-					seen2.set(e, {a: regex, b: cl, c: setState})
-					arr.push(regex, cl, setState)
-				}
-			} }
-			
-		}*/
 	})}

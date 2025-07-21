@@ -195,13 +195,15 @@ void main(){GL_col=GL_main(GL_uv);}
 		if(code0.visibleLineCount > 50) toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
 			const i0 = e.indexOf(':'), i1 = e.indexOf(':', i0+1), i2 = e.indexOf(':', i1+1)
+			if(i0 < 0) continue
 			const type = e.slice(0, i0), line = Math.max(1, +e.slice(i1+1, i2))
 			let t = code0.getLineStyle(line) || annotations.info
 			if(type == 'ERROR') t = annotations.error
 			else if(type == 'WARNING') t != annotations.error && (t = annotations.warn)
 			else if(type == 'NOTE' || type == 'INFO') t = annotations.info
 			const l = code0.getLineMessage(line)
-			code0.setLineStyle(line, t, l ? l+'\n'+e.slice(i2+1) : e.slice(i2+1))
+			e = e.slice(i2+1).trim()
+			code0.setLineStyle(line, t, l ? l+'\n'+e : e)
 		}
 	}
 	if(!gl.getShaderParameter(fsh, gl.COMPILE_STATUS)){
@@ -216,9 +218,12 @@ void main(){GL_col=GL_main(GL_uv);}
 		if(code0.visibleLineCount > 50) toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
 			let t = code0.getLineStyle(1) || annotations.info
-			if(e.startsWith('ERROR:')) e = e.slice(6), t = annotations.error
-			else if(e.startsWith('WARNING:')) e = e.slice(8), t != annotations.error && (t = annotations.warn)
-			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = annotations.info
+			if(e.startsWith('ERROR:'))
+				e = e.slice(6).trim(), t = annotations.error
+			else if(e.startsWith('WARNING:'))
+				e = e.slice(8).trim(), t != annotations.error && (t = annotations.warn)
+			else if(e.startsWith('NOTE:') || e.startsWith('INFO:'))
+				e = e.slice(5).trim(), t = annotations.info
 			const l = code0.getLineMessage(1)
 			code0.setLineStyle(1, t, l ? l+'\n'+e : e)
 		}
@@ -367,7 +372,7 @@ uniform struct images;
 uniform float t, tMax;
 
 void main(){ gl_FragColor = main(gl_FragCoord.xy / vec2(size)); }`
-requestAnimationFrame(() => requestAnimationFrame(() => $('#editor').scrollTo(0, 1e9)))
+document.fonts.ready.then(() => requestAnimationFrame(() => $('#editor').scrollTo(0, 2e9)))
 
 const resize = $('#resize')
 resize.onpointerdown = e => resize.setPointerCapture(e.pointerId)
@@ -493,7 +498,7 @@ function download(method = saveBlob){
 		g.on('progress', p => {
 			progress.textContent = 'Exporting: ' + Math.round(p*100) + '%\nClick to cancel'
 		})
-		g.on('finished', method)
+		g.on('finished', b => method(b))
 		const progress = toast('Exporting GIF...\nClick to cancel', '#f08', () => {
 			g.abort()
 			progress.textContent = 'Export cancelled'
@@ -511,7 +516,7 @@ function download(method = saveBlob){
 		draw()
 		return
 	}
-	gl.canvas.toBlob(method, f, expQuality)
+	gl.canvas.toBlob(b => method(b), f, expQuality)
 }
 
 function saveBlob(a, name = 'picfunk-output'){
