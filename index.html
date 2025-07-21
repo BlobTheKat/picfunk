@@ -8,6 +8,7 @@
 	<meta name="og:title" content="Picfunk" />
 	<meta name="og:description" content="GLSL image editor!" />
 	<meta name="og:image" content="https://picfunk.art/icon.png" />
+	<script src="codearea.min.js"></script>
 	<style>
 		@font-face {
 			font-family: AnkaCoder;
@@ -254,35 +255,26 @@
 			background: #8881;
 			height: calc(100% - var(--h) - 16px);
 		}
-		#txt, #txt1{
-			width: 100%; position: relative;
-			min-height: 100%;
+		#code, #code1{
+			width: 100%;
+			min-height: calc(100% - 16px);
 			font-size: 16px;
-			white-space: pre-wrap;
-			overflow-wrap: anywhere;
 			line-height: 1.4em;
 			tab-size: 3;
-			padding: 8px 0 8px 16px;
+			padding: 0 8px 8px 8px;
+			background: #8881;
 			color: #f00;
+			font-family: AnkaCoder;
 		}
-		#txt1{
+		#codesep{
+			width: 100%;
+			height: 16px;
+			background: linear-gradient(to bottom, #8883, #8881);
+		}
+		#code1{
 			min-height: unset;
 			background-color: #8883;
-		}
-		#input{
-			z-index: 1; position: absolute;
-			padding: inherit; margin: 0;
-			top: 0; left: 0;
-			width: 100%; height: 100%;
-			border: none; outline: none;
-			background: none;
-			font: inherit;
-			color: #0000;
-			resize: none;
-			caret-color: var(--b);
-			white-space: pre-wrap;
-			line-height: inherit;
-			tab-size: inherit;
+			padding: 8px 8px 0 8px;
 		}
 		#resize{
 			position: absolute;
@@ -294,36 +286,6 @@
 			cursor: ns-resize;
 			line-height: 14px;
 		}
-		#txt > err:after{
-			content: attr(data-c);
-			background: #f00;
-			color: var(--b);
-			position: absolute;
-			left: 0;
-			width: 13px;
-			cursor: pointer;
-			padding: 0 2px;
-			box-sizing: border-box;
-			z-index: 3;
-		}
-		#txt > err.warn:after{ background: #f90; }
-		#txt > err.info:after{ background: #888; }
-		#txt > err:hover:after{
-			content: attr(data-t);
-			width: 100%;
-			z-index: 4;
-		}
-		#txt:after, #txt2:after{ content: ''; height: 0; display: inline-block; }
-		.types{ color: #e52 }
-		.storage{ color: #d00 }
-		.keyword{ color: #e45 }
-		.macro{ color: #c84 }
-		.int{ color: #25e }
-		.float{ color: #52e }
-		.id{ color: var(--b); opacity: 0.8 }
-		.symbols{ color: var(--b) }
-		.symbols2{ color: var(--b); opacity: 0.6 }
-		.comment{ color: var(--b); opacity: 0.3 }
 
 		#logo{
 			background: url(./icon.png) 0/32px no-repeat;
@@ -467,8 +429,9 @@
 			<img draggable="false" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAE1JREFUOE9j7Ojo+M+AB1RUVDAiSxNSz0hIwQgwEN2L+MIXJIceZBhhOAIMJBRGpMqjJFpSNWNTPwQMRE9HIyDZ0NzL6ElhBBRflHoZAGZsaYUZS2sYAAAAAElFTkSuQmCC" id="fs" title="Fullscreen">
 		</div></div>
 		<div id="editor">
-			<div id="txt1"></div>
-			<div id="txt"><textarea id="input"></textarea></div>
+			<code-area disabled id="code1"></code-area>
+			<div id="codesep"></div>
+			<code-area id="code"></code-area>
 		</div>
 		<div id="resize">=</div>
 	</div>

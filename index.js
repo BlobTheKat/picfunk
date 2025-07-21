@@ -164,25 +164,16 @@ gl.attachShader(p, vsh)
 gl.attachShader(p, fsh)
 let err = '', tLoc = null, isizeLoc = null, sizeLoc = null, tMaxLoc = null
 let tOrigin = -1, maxTime = 0, interval = 0
-let errors = []
-function makeError(err,c,t=''){
-	const p = c?c.previousElementSibling:highlighted.lastElementChild
-	if(p && p.dataset.c){
-		p.dataset.c = Math.min((+p.dataset.c||1) + 1,9)
-		p.dataset.t += '\n'+err.trim()
-		return
-	}
-	const n = document.createElement('err')
-	n.className = t
-	n.dataset.c = '!'
-	n.dataset.t = err.trim()
-	highlighted.insertBefore(n, c)
-	errors.push(n)
+
+const annotations = {
+	error: CodeAreaStyle('background-color: #f008; color: white; backdrop-filter:blur(5px);--hover-padding:0.25lh'),
+	warn: CodeAreaStyle('background-color: #f908; color: white; backdrop-filter:blur(5px);--hover-padding:0.25lh'),
+	info: CodeAreaStyle('background-color: #8888; color: white; backdrop-filter:blur(5px);--hover-padding:0.25lh')
 }
+
 function code(){
-	for(const e of errors) e.remove()
 	raf > 0 ? cancelAnimationFrame(raf) : raf < 0 && clearTimeout(raf)
-	errors.length = 0
+	code0.resetAllLineStyles()
 	const a = performance.now()
 	gl.shaderSource(fsh, `#version 300 es
 precision highp float;
@@ -197,25 +188,21 @@ vec4 GL_main(vec2);
 void main(){GL_col=GL_main(GL_uv);}
 #define main GL_main
 #line 1
-`+input.value)
+`+code0.value)
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
 	if(err){
-		//toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
-		const v = input.value.split('\n')
-		const arr = []
-		let c = 0, j = 0; for(const l of v) arr.push(c),c+=l.length+1
-		c = 0; const ch = highlighted.children
+		if(code0.visibleLineCount > 50) toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
-			let t = ''
-			if(e.startsWith('ERROR:')) e = e.slice(6)
-			else if(e.startsWith('WARNING:')) e = e.slice(8), t = 'warn'
-			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = 'info'
-			const w = e.indexOf(':'), i = e.indexOf(':', w+1)
-			const idx = arr[e.slice(w+1, i)]; e = e.slice(i+1)
-			let L = ch[j].textContent.length
-			while(j<ch.length-1&&c+L<=idx) c+=L,L=ch[++j].textContent.length
-			makeError(e, ch[j], t)
+			const i0 = e.indexOf(':'), i1 = e.indexOf(':', i0+1), i2 = e.indexOf(':', i1+1)
+			console.log(e)
+			const type = e.slice(0, i0), line = +e.slice(i1+1, i2)
+			let t = code0.getLineStyle(line) || annotations.info
+			if(type == 'ERROR') t = annotations.error
+			else if(type == 'WARNING') t != annotations.error && (t = annotations.warn)
+			else if(type == 'NOTE' || type == 'INFO') t = annotations.info
+			const l = code0.getLineMessage(line)
+			code0.setLineStyle(line, t, l ? l+'\n'+e.slice(i2+1) : e.slice(i2+1))
 		}
 	}
 	if(!gl.getShaderParameter(fsh, gl.COMPILE_STATUS)){
@@ -227,13 +214,14 @@ void main(){GL_col=GL_main(GL_uv);}
 	gl.useProgram(p)
 	err = gl.getProgramInfoLog(p)
 	if(err){
-		//toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
+		if(code0.visibleLineCount > 50) toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
-			let t = ''
-			if(e.startsWith('ERROR:')) e = e.slice(6)
-			else if(e.startsWith('WARNING:')) e = e.slice(8), t = 'warn'
-			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = 'info'
-			makeError(e, highlighted.firstElementChild)
+			let t = code0.getLineStyle(1) || annotations.info
+			if(e.startsWith('ERROR:')) e = e.slice(6), t = annotations.error
+			else if(e.startsWith('WARNING:')) e = e.slice(8), t != annotations.error && (t = annotations.warn)
+			else if(e.startsWith('NOTE:') || e.startsWith('INFO:')) e = e.slice(5), t = annotations.info
+			const l = code0.getLineMessage(1)
+			code0.setLineStyle(1, t, l ? l+'\n'+e : e)
 		}
 	}
 	if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
@@ -314,25 +302,43 @@ function quickdraw2(t){
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
 }
 onbeforeunload = () => true
-const input = $('#input'), highlighted = $('#txt')
-input.onchange = code
-input.onkeydown = ev => {
-	if(ev.keyCode === 13 && ev.shiftKey) code()
-	else if(ev.keyCode === 9){
-		const s = input.selectionStart, e = input.selectionEnd, v = input.value
-		if(s === e){
-			input.value = v.slice(0, s)+'\t'+v.slice(s)
-			input.selectionStart = input.selectionEnd = s+1
-		}else{
-			if(ev.shiftKey) input.value = v.slice(0, s)+v.slice(s,e).replace(/\n\t/g,'\n')+v.slice(e)
-			else input.value = v.slice(0, s)+v.slice(s,e).replace(/\n/g,'\n\t')+v.slice(e)
-			input.selectionStart = s; input.selectionEnd = e+input.value.length-v.length
-		}
-		input.oninput()
-	}else return
-	ev.preventDefault()
+
+const styles = {
+	types: CodeAreaStyle(`color: #e52`),
+	storage: CodeAreaStyle(`color: #f45`),
+	keyword: CodeAreaStyle(`color: #e39`),
+	macro: CodeAreaStyle(`color: #e39; font-style: italic`),
+	int: CodeAreaStyle(`color: #46f`),
+	float: CodeAreaStyle(`color: #73f`),
+	id: CodeAreaStyle(`color: #ccc`),
+	symbols: CodeAreaStyle(`color: #fff`),
+	symbols2: CodeAreaStyle(`color: #999`),
+	comment: CodeAreaStyle(`color: #555`)
 }
-input.value = `// Scroll up for docs
+
+const macro = [
+	/(?=\n)/y, stack => (stack[stack.length-1] = def, null),
+	CodeAreaStyle(`color: #a16; font-style: italic`)
+]
+
+const def = [
+	/\/\/.*|\/\*([^*]|\*(?!\/))*(\*\/|$)/y, styles.comment,
+	/(^|\n)\s*#\w+/y, stack => (stack[stack.length-1] = macro, styles.macro),
+	/(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi, styles.int,
+	/(\d+\.\d*|\.\d+)(e\d+)?f?/yi, styles.float,
+	/gl_\w+|__\w+|(?:union|common|partition|active|asm|class|union|enum|typedef|template|this|packed|goto|inline|noinline|volatile|public|static|extern|external|interface|unsigned|input|output)(?!\w)/y, styles.invalid,
+	/([uib]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void|bool)(?!\w)/y, styles.types,
+	/(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y, styles.keyword,
+	/(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y, styles.storage,
+	/[()[\]!%^&*:<>,/?|~\-=+]+/y, styles.symbols,
+	/[;.{}]/y, styles.symbols2,
+	/\w+/y, styles.id,
+]
+
+const code0 = $('#code'), code1 = $('#code1')
+code0.oncompile = code
+code0.basePattern = code1.basePattern = def
+code0.value = `// Scroll up for docs
 
 vec4 main(vec2 uv){
 	// Try editing this
@@ -344,71 +350,25 @@ vec4 main(vec2 uv){
 	//color += vec4(0.8) * pow(mod(-t,0.667),2.0);
 	return color;
 }`
-const tokens = Object.entries({
-	comment: /\/\/.*|\/\*([^*]|\*[^\/])*(\*\/|$)/y,
-	macro: /(^|\n)#[^\n]+/y,
-	int: /(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi,
-	float: /(\d+\.\d*|\.\d+)(e\d+)?f?/yi,
-	invalid: /gl_\w+|__\w+|(?:union|common|partition|active|asm|class|union|enum|typedef|template|this|packed|goto|inline|noinline|volatile|public|static|extern|external|interface|unsigned|input|output)(?!\w)/y,
-	types: /([ui]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void)(?!\w)/y,
-	keyword: /(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y,
-	storage: /(precision|lowp|mediump|highp|const|in|out|inout|uniform|struct)(?!\w)/y,
-	symbols: /[()[\]!%^&*:<>,/?|~\-=+]+/y,
-	symbols2: /[;.{}]/y,
-	id: /\w+/y,
-})
-let os = 0, oe = 0
-document.onselectionchange = () => {os = input.selectionStart; oe = input.selectionEnd}
-input.oninput = () => {
-	let i = Math.min(input.selectionStart, os), l = Math.max(input.selectionEnd, oe) - i
-	let e = 0, j = 1, L = 0
-	const ch = highlighted.children, count = ch.length
-	for(;j<count;j++){
-		const t = ch[j].textContent
-		if((e += t.length) <= i){ L=t.length; continue }
-		e = i-e+t.length+L
-		i -= e; l += e
-		if(j>1) j--
-		break
-	}
-	if(j==count) i -= L, l += L,j>1&&j--
-	e = 0
-	const v = input.value; let inv = 0
-	t: while(i+inv < v.length){
-		for(const {0:k,1:r} of tokens){
-			r.lastIndex = i+inv
-			if(!r.test(v)) continue
-			const len = r.lastIndex-i
-			e += len; l -= len
-			let c = ch[j]
-			while(c && (c.textContent.length > e)){
-				e -= c.textContent.length, c.remove()
-				c = ch[j]
-			}
-			if(inv){
-				const n = document.createElement('span')
-				n.textContent = v.slice(i, i+inv)
-				highlighted.insertBefore(n, c); j++
-			}
-			const n = document.createElement('span')
-			n.classList.add(k)
-			n.textContent = v.slice(i+inv, i += len)
-			highlighted.insertBefore(n, c); j++
-			inv = 0
-			if(l<=0&&!e) return
-			continue t
-		}
-		inv++
-	}
-	while(j<ch.length) ch[j].remove()
-	if(i<v.length){
-		const n = document.createElement('span')
-		n.textContent = v.slice(i)
-		highlighted.append(n)
-	}
-	os = input.selectionStart; oe = input.selectionEnd
-}
-input.oninput()
+code1.value = `#version 300 es
+precision highp float;
+
+const float PI = 3.141592653589793;
+const float E = 2.718281828459045;
+const float SQRT2 = 1.4142135623730951;
+
+// Output size
+uniform vec2 size;
+uniform ivec2 isize;
+// Struct of all images
+//   e.g texture(images.background, uv)
+//   e.g texelFetch(images.atlas1, coords>>1, 1)
+uniform struct images;
+// Time variable for animations
+uniform float t, tMax;
+
+void main(){ gl_FragColor = main(gl_FragCoord.xy / vec2(size)); }`
+requestAnimationFrame(() => requestAnimationFrame(() => $('#editor').scrollTo(0, 1e9)))
 
 const resize = $('#resize')
 resize.onpointerdown = e => resize.setPointerCapture(e.pointerId)
@@ -650,9 +610,8 @@ function parsePfFileContents(buf, blob, off = 0){
 		j = buf.indexOf(255, i)
 		if(j < 0) return 'unterminated string'
 		const payload = dec.decode(buf.subarray(i, i = j)); i++
-		if(!name) input.value = payload
+		if(!name) code0.value = payload
 	}
-	input.oninput()
 	code()
 	return ''
 }
@@ -700,7 +659,7 @@ $('#save').onclick = () => {
 	block.setUint8(12, fi >= 0 ? fi : ~dithers.indexOf(gifDither)<<1|!gifRepeat)
 	block.setUint8(13, Math.round(expQuality*255))
 	block.setUint16(14, gifRepeat-1)
-	const code = enc.encode(input.value)
+	const code = enc.encode(code0.value)
 	res.push(ff, block.buffer, ff, code, ff); sz += code.length + 19
 	for(const i of res2) res.push(i)
 	// \xFFPF
@@ -715,48 +674,6 @@ $('#save').onclick = () => {
 onkeydown = e => {
 	if(e.keyCode == 83 && e.metaKey) e.preventDefault(), download()
 }
-{
-	const v = `#version 300 es
-precision highp float;
-
-const float PI = 3.141592653589793;
-const float E = 2.718281828459045;
-const float SQRT2 = 1.4142135623730951;
-
-// Output size
-uniform vec2 size;
-uniform ivec2 isize;
-// Struct of all images
-//   e.g texture(images.background, uv)
-//   e.g texelFetch(images.atlas1, coords>>1, 1)
-uniform struct images;
-// Time variable for animations
-uniform float t, tMax;
-
-void main(){ gl_FragColor = main(gl_FragCoord.xy / vec2(size)); }`; let inv = 0, i = 0
-	const highlighted1 = $('#txt1')
-	t: while(i+inv < v.length){
-		for(const {0:k,1:r} of tokens){
-			r.lastIndex = i+inv
-			if(!r.test(v)) continue
-			const len = r.lastIndex-i
-			if(inv){
-				const n = document.createElement('span')
-				n.textContent = v.slice(i, i+inv)
-				highlighted1.append(n)
-			}
-			const n = document.createElement('span')
-			n.classList.add(k)
-			n.textContent = v.slice(i+inv, i += len)
-			highlighted1.append(n)
-			inv = 0
-			continue t
-		}
-		inv++
-	}
-}
-
-$('#editor').scrollTo(0, 1e9)
 
 const toasts = $('#toasts')
 const clr = toasts.firstElementChild

@@ -23,6 +23,13 @@
 		static observedAttributes = ['value', 'disabled']
 		#basePattern = []
 		#lineStyle = ''; #lineStyle2 = null
+		#firstLine = 1
+		get firstLine(){ return this.#firstLine }
+		set firstLine(a){
+			this.#firstLine = Math.floor(+a || 0)
+			this.#el.style.counterReset = 'l '+(this.#firstLine-1)
+		}
+		get visibleLineCount(){ return this.#el.childNodes.length }
 		get defaultLineStyle(){ return this.#lineStyle2 }
 		set defaultLineStyle(cl){
 			const old = this.#lineStyle
@@ -33,18 +40,29 @@
 				old ? cl ? c.replace(old, cl) : c.remove(old) : cl && c.add(cl)
 			}
 		}
-		setLineStyle(line = 1, style = null, message = null){
+		setLineStyle(line, style = null, message = null){
 			style = typeof style == 'symbol' ? style.description : this.#lineStyle
-			const el = this.#el.childNodes[line-1]?.firstChild
-			if(el) el.className = style, typeof message == 'string' ? el.dataset.message = message : delete el.dataset.message
+			const el = this.#el.childNodes[line - this.#firstLine]?.firstChild
+			if(el){
+				el.className = style, typeof message == 'string' ? el.dataset.message = message : delete el.dataset.message
+				return true
+			}
+			return false
 		}
-		getLineStyle(line = 1){
-			const cl = this.#el.childNodes[line-1]?.firstChild.classList
+		resetAllLineStyles(){
+			const ch = this.#el.childNodes
+			for(let i = ch.length-1; i >= 0; i--){
+				const el = ch[i].firstChild
+				el.className = this.#lineStyle, typeof message == 'string' ? el.dataset.message = message : delete el.dataset.message
+			}
+		}
+		getLineStyle(line = 0){
+			const cl = this.#el.childNodes[line - this.#firstLine]?.firstChild.classList
 			if(!cl || !cl.length) return null
 			return Symbol.for(cl[0])
 		}
 		getLineMessage(line = 1){
-			const el = this.#el.childNodes[line-1]?.firstChild
+			const el = this.#el.childNodes[line - this.#firstLine]?.firstChild
 			if(!el) return null
 			return el.dataset.message ?? null
 		}
@@ -270,7 +288,7 @@
 				if(!(target instanceof HTMLLabelElement)) return
 				const ch = this.#el.childNodes, l = ch.length
 				for(let i = 0; i < l; i++) if(ch[i].firstChild == target){
-					this.onlineclick?.(i+1, this)
+					this.onlineclick?.(i+this.#firstLine, this)
 					break
 				}
 				return false
