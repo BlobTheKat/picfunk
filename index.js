@@ -342,6 +342,10 @@ const def = [
 const code0 = $('#code'), code1 = $('#code1')
 code0.oncompile = code
 code0.basePattern = code1.basePattern = def
+const bookmark = CodeAreaStyle(`background:#e52;color:#fff`)
+code0.onlineclick = l => {
+	code0.setLineStyle(l, code0.getLineStyle(l) == bookmark ? null : bookmark)
+}
 code0.value = `// Scroll up for docs
 
 vec4 main(vec2 uv){
