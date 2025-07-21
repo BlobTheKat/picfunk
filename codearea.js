@@ -1,4 +1,5 @@
 {
+	const SAFARI = CSS.supports('-webkit-backdrop-filter', 'none')
 	const styles = new Map(), sheet = new CSSStyleSheet(), gsheet = new CSSStyleSheet()
 	gsheet.insertRule('code-area{user-select:none !important;-webkit-user-select:none !important;position:relative !important;tab-size:2;box-sizing:border-box !important;-webkit-tap-highlight-color:#0000 !important;text-size-adjust: none !important;-webkit-text-size-adjust: none !important;touch-action: pan-y !important;display:grid !important;white-space:pre-wrap !important;font-family:monospace;overflow-wrap:break-word;overflow:auto !important;line-height:1.2;scrollbar-width:0;--max-line-width:100%;grid-template-columns:minmax(auto,var(--max-line-width));--min-gutter:0}', 0)
 	gsheet.insertRule('code-area::-webkit-scrollbar{display: none}', 1)
@@ -141,7 +142,7 @@
 				const v = this.#textarea.value
 				let i = Math.min(this.#os, this.#os = this.#textarea.selectionStart)
 				let e = 0, j = 1, k = 1, l = 0
-				const ch = this.#el.children, count = ch.length-1
+				const ch = this.#el.childNodes, count = ch.length-1
 				let el = ch[1], ch2
 				let state = null, sl = 0, sz = null
 				const setState = () => {
@@ -301,6 +302,12 @@
 				}
 				const w = Math.floor(Math.log10(Math.max(-this.#firstLine, ch.length*.5+this.#firstLine-1)))+1.5
 				this.#el.style.setProperty('--g', this.#textarea.style.paddingLeft = `max(var(--min-gutter) * 1ch,${w}ch)`)
+				if(SAFARI){
+					// force deterministic text wrapping, truly a safari moment of all time
+					this.#textarea.style.display = 'none'
+					this.#textarea.offsetWidth
+					this.#textarea.style.display = ''
+				}
 			}
 			this.#el.onclick = ev => {
 				const target = ev.composedPath()[0]
@@ -320,7 +327,7 @@
 		rehighlight(){
 			if(this.#rhScheduled) return
 			this.#os = this.#oe = this.#ol = 0
-			const ch = this.#el.children; let l = ch.length
+			const ch = this.#el.childNodes; let l = ch.length
 			while(l) ch[--l].remove()
 			this.#rhScheduled = requestAnimationFrame(this.#textarea.oninput)
 		}
