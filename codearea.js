@@ -164,7 +164,7 @@
 					if((e += l1) <= i) continue
 					e -= l1
 					ch2 = el.childNodes; let len = ch2.length-1
-					if(len > 1 && e + ch2[2].l > i && j) do{
+					if(len > 1 && e + ch2[2].l >= i && j) do{
 						// prev token will be on prev line!
 						l1 = (el = ch[--j]).l, e -= l1, ch2 = el.childNodes, len = ch2.length-1
 					}while(len < 2 && j)
