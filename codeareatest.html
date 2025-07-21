@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>codearea.js</title>
+	<script src="./codearea.js"></script>
+	<style>
+		html{
+			overflow: hidden; height: 100%;
+		}
+		body{
+			overflow: hidden; height: 100%;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+		}
+		*{ box-sizing: border-box; }
+		@font-face{
+			src: url(AnkaCoder.ttf);
+			font-family: anka;
+		}
+		:root code-area{
+			overscroll-behavior: none;
+			flex: 1;
+			background-color: #181818;
+			padding: 8px;
+			color: white;
+			font-size: 16px;
+			font-family: anka;
+			tab-size: 4;
+		}
+		#filesel{
+			display: flex;
+			height: 32px;
+			background: #000;
+			user-select: none;
+			-webkit-user-select: none;
+		}
+		#filesel > div{
+			height: 32px;
+			padding: 8px; gap: 8px;
+			white-space: pre;
+			display: flex;
+			align-items: center;
+			color: white;
+			font-family: AnkaCoder;
+			border-right: 1px #8888 solid;
+			cursor: pointer;
+			background: #111;
+		}
+		#filesel > div.active{
+			background: #333;
+		}
+		#filesel > div:before{
+			content: ''; display: block;
+			width: 16px; height: 16px;
+			background: var(--c);
+			clip-path: var(--p);
+		}
+		#filesel > div > span{
+			content: ''; display: block;
+			width: 16px; height: 16px;
+			border-radius: 4px;
+		}
+		#filesel > div > span:after{
+			content: ''; display: block;
+			width: 16px; height: 16px;
+			background: #888;
+			clip-path: path("M4 13 3 12 7 8 3 4 4 3 8 7 12 3 13 4 9 8 13 12 12 13 8 9Z");
+		}
+		#filesel > div > span:hover{ background: #8883; }
+	</style>
+</head>
+<body style="margin:0">
+	<div id="filesel"></div>
+	<script type="module">
+		import JS from './lang-js.js'
+		import GLSL from './lang-glsl.js'
+		let currentFile = null
+		const fileExtensions = {
+			__proto__: null,
+			js: JS, glsl: GLSL
+		}, fileColors = {
+			__proto__: null,
+			js: '#cbcb41', glsl: '#e52'
+		}, fileIcons = {
+			__proto__: null,
+			'': 'path("M1 0 10 0 15 5 15 16 1 16zM3 2 3 14 13 14 13 6 9 6 9 2z")',
+			js: 'path("m9.916 10.207c.489.7985 1.1252 1.3853 2.2505 1.3853.9452 0 1.5491-.4725 1.5491-1.1252 0-.7823-.6204-1.0593-1.6609-1.5144l-.5703-.2447c-1.6463-.7013-2.7399-1.58-2.7399-3.4374 0-1.711 1.3036-3.0135 3.341-3.0135 1.4505 0 2.4932.5048 3.2447 1.8266l-1.7765 1.1406c-.3911-.7013-.8131-.9777-1.4682-.9777-.6682 0-1.0917.4239-1.0917.9777 0 .6844.4239.9615 1.4027 1.3853l.5703.2443c1.9383.8312 3.0327 1.6786 3.0327 3.5838 0 2.0539-1.6135 3.1792-3.7803 3.1792-2.1186 0-3.4875-1.0096-4.1572-2.3329zm-8.0589.1976c.3584.6358.6844 1.1734 1.4682 1.1734.7495 0 1.2224-.2933 1.2224-1.4335V2.3873H6.829v7.788c0 2.3622-1.3849 3.4374-3.4065 3.4374-1.8266 0-2.8844-.9452-3.4224-2.0838z")',
+			glsl: 'path("M3.8262 15.6713 1.962 8.1246C1.9603 8.1185 1.9585 8.1123 1.9571 8.1062 1.9555 8.0998 1.954 8.0932 1.9527 8.0868L.0876.5364C.0507.3865.0963.2281.2076.1211.3188.0139.4788-.0258.6271.0169L4.3271 1.0822C4.3529 1.0848 4.3785 1.0897 4.4039 1.0971 4.429 1.1043 4.4532 1.1137 4.4762 1.1251L11.7748 3.2265C11.7985 3.2292 11.822 3.2339 11.8452 3.2406 11.8682 3.2473 11.8905 3.2558 11.9116 3.2659L15.6141 4.3318C15.7628 4.3747 15.8772 4.4934 15.9143 4.6435 15.9516 4.7935 15.9058 4.9521 15.7943 5.0591L4.546 15.8793C4.4346 15.9865 4.2745 16.026 4.126 15.9831 3.9775 15.9401 3.8631 15.8212 3.8262 15.6713ZM14.654 4.9556 12.326 4.2854 12.9061 6.6369 14.654 4.9556ZM8.597 3.2118 9.1669 5.5214 10.8809 3.8694 8.597 3.2118ZM10.1068 9.3298 11.8636 7.6399 9.5241 6.9684 10.1068 9.3298ZM1.107 1.0555 1.6892 3.4129 3.4387 1.7267 1.107 1.0555ZM2.6174 7.17 4.3711 5.4817 2.0347 4.811 2.6174 7.17ZM7.1591 2.7979 4.885 2.1432 5.4521 4.4412 7.1591 2.7979ZM4.4863 14.7362 6.2762 13.0145 3.8919 12.33 4.4863 14.7362ZM9.0269 10.3686 6.7542 9.7135 7.3207 12.0098 9.0269 10.3686ZM2.9769 8.6252 3.5463 10.9308 5.2569 9.2822 2.9769 8.6252ZM3.2169 7.7939 5.5561 8.4681 4.9727 6.1036 3.2169 7.7939ZM9.2669 9.5374 8.6844 7.1769 6.9332 8.8649 9.2669 9.5374ZM7.7578 3.4224 6.0561 5.0606 8.3228 5.7113 7.7578 3.4224ZM8.0929 6.5454 5.8111 5.8903 6.3801 8.1964 8.0929 6.5454ZM2.331 3.996 4.6127 4.651 4.0438 2.3451 2.331 3.996ZM9.7722 6.1395 12.054 6.7947 11.4852 4.4886 9.7722 6.1395ZM4.1873 11.5146 6.469 12.1697 5.9002 9.8638 4.1873 11.5146Z")'
+		}
+		function onfselclick(){ files.select(this.dataset.name) }
+		function onfselclick3(e){ files.delete(this.parentElement.dataset.name); e.stopPropagation() }
+		const recognize = (f, name) => {
+			let ex = name.slice(name.lastIndexOf('/')+1)
+			f.el2.firstChild.textContent = ex
+			ex = ex.slice(ex.lastIndexOf('.')+1||ex.length)
+			f.basePattern = fileExtensions[ex] || null
+			f.el2.style.setProperty('--c', fileColors[ex] || '#fff')
+			f.el2.style.setProperty('--p', fileIcons[ex] || 'auto')
+			f.el2.dataset.name = name
+		}
+		let carea = new Comment()
+		filesel.parentElement.insertBefore(carea, filesel.nextSibling)
+		const files = new class extends Map{
+			set(n, t){
+				if(typeof n != 'string') return this
+				let f = super.get(n)
+				if(f){
+					f.value = t
+					return
+				}
+				f = new CodeAreaElement()
+				f.value = t
+				filesel.append(f.el2 = document.createElement('div'))
+				f.el2.onclick = onfselclick
+				const el3 = document.createElement('span')
+				el3.onclick = onfselclick3
+				f.el2.append('', el3)
+				recognize(f, n)
+				super.set(n, f)
+				return this
+			}
+			get(n){ return super.get(n)?.value }
+			rename(o, n){
+				const f = super.get(o)
+				if(!f || super.has(n)) return false
+				super.delete(o)
+				super.set(n, f)
+				recognize(f, n)
+				return true
+			}
+			delete(n){
+				const f = super.get(n)
+				if(!f) return
+				super.delete(n)
+				f.el2.remove()
+				if(f != carea) return
+				if(!this.size) this.set('unnamed', '')
+				const f2 = super.get(filesel.firstElementChild.dataset.name)
+				carea.replaceWith(f2); carea = f2
+				filesel.firstElementChild.classList.add('active')
+			}
+			select(n){
+				const f = super.get(n)
+				if(!f) return false
+				if(f == carea) return true
+				
+				carea.replaceWith(f)
+				carea.el2?.classList.remove('active')
+				carea = f; f.el2.classList.add('active')
+				return true
+			}
+		}
+
+		files.set('unnamed', '')
+		files.select('unnamed')
+		fetch('./planet.glsl').then(r => r.text()).then(t => {
+			files.set('planet.glsl', t)
+			files.select('planet.glsl')
+		})
+		fetch('./codearea.js').then(r => r.text()).then(t => {
+			files.set('codearea.js', t)
+		})
+	</script>
+</body>
+</html>
