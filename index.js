@@ -195,8 +195,7 @@ void main(){GL_col=GL_main(GL_uv);}
 		if(code0.visibleLineCount > 50) toast('Shader compilation failed in '+(performance.now()-a).toFixed(2)+'ms', '#f00')
 		for(let e of err.split('\n')){
 			const i0 = e.indexOf(':'), i1 = e.indexOf(':', i0+1), i2 = e.indexOf(':', i1+1)
-			console.log(e)
-			const type = e.slice(0, i0), line = +e.slice(i1+1, i2)
+			const type = e.slice(0, i0), line = Math.max(1, +e.slice(i1+1, i2))
 			let t = code0.getLineStyle(line) || annotations.info
 			if(type == 'ERROR') t = annotations.error
 			else if(type == 'WARNING') t != annotations.error && (t = annotations.warn)

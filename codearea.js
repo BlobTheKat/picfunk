@@ -4,7 +4,7 @@
 	gsheet.insertRule('code-area::-webkit-scrollbar{display: none}', 1)
 	document.adoptedStyleSheets.push(gsheet)
 	sheet.insertRule('textarea{z-index:1;padding:0;padding-left:max(1ch,var(--min-gutter) * 1ch);margin:0;inset:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#999;white-space:pre-wrap;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;text-size-adjust: none;-webkit-text-size-adjust: none;touch-action:pan-y;overflow-wrap:inherit;overflow:clip;grid-area:1/1}', 0)
-	sheet.insertRule('textarea::selection{background: #80808080}',1)
+	sheet.insertRule('textarea::selection{background: Highlight}',1)
 	sheet.insertRule('div{min-height:1lh;counter-increment:l}',2)
 	sheet.insertRule('label{box-sizing:border-box;position:absolute;left:0;width:calc(var(--g) + 0.25lh);display:block;white-space:pre;color:#808080;padding-right:0.25lh;clip-path:polygon(0 0, calc(100% - 0.25lh) 0, 100% 50%, calc(100% - 0.25lh) 100%, 0 100%);z-index:2;cursor:pointer}',3)
 	sheet.insertRule('label::before{content:counter(l);display:inline-block;width:var(--g);text-align:right}',4)
@@ -113,6 +113,7 @@
 			super()
 			this.#sh.adoptedStyleSheets.push(sheet)
 			this.#sh.appendChild(this.#el)
+			this.#el.setAttribute('inert','')
 			this.#sh.append(this.#textarea)
 			this.#textarea.spellcheck = false
 			this.#textarea.onchange = this.compile
