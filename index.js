@@ -51,7 +51,7 @@ function addFile(file, nm = file.name, opts = 0){
 	a.onload = () => {
 		if(!(opts&256)) toast((file.name || '(From URL)') + ': ' + fmtSize(file.size))
 		d.textContent = a.naturalWidth+'x'+a.naturalHeight
-		if(!images.size) setsize(a.naturalWidth, a.naturalHeight)
+		if(!(opts&256) && !images.size) setsize(a.naturalWidth, a.naturalHeight)
 		d.onclick = () => setsize(a.naturalWidth, a.naturalHeight)
 		t = gl.createTexture()
 		let i = 0; while(usedTextures[i]==-1) i++
@@ -329,7 +329,7 @@ const def = [
 	/\/\/.*|\/\*([^*]|\*(?!\/))*(\*\/|$)/y, styles.comment,
 	/(^|\n)\s*#\w+/y, stack => (stack[stack.length-1] = macro, styles.macro),
 	/(false|true)(?!\w)|(\d+|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+)[iu]?(?![\.\w])/yi, styles.int,
-	/(\d+\.\d*|\.\d+)(e\d+)?f?/yi, styles.float,
+	/(\d+\.\d*|\.\d+)(e[+-]?\d*)?f?/yi, styles.float,
 	/gl_\w+|__\w+|(?:union|common|partition|active|asm|class|union|enum|typedef|template|this|packed|goto|inline|noinline|volatile|public|static|extern|external|interface|unsigned|input|output)(?!\w)/y, styles.invalid,
 	/([uib]?vec[234]|mat[234](x[234])?|float|u?int|u?sampler[23]D|void|bool)(?!\w)/y, styles.types,
 	/(if|else|while|for|discard|return|break|continue|do|while|switch|case|default)(?!\w)/y, styles.keyword,
