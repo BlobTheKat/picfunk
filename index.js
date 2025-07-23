@@ -340,7 +340,8 @@ const def = [
 ]
 
 const code0 = $('#code'), code1 = $('#code1')
-code0.oncompile = code
+code0.onchange = code
+code0.keyOverrides.set('Shift+Enter', code)
 code0.basePattern = code1.basePattern = def
 const bookmark = CodeAreaStyle(`background:#73f;color:#fff`)
 code0.onlineclick = l => {
