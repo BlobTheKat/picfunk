@@ -45,7 +45,6 @@ const styles = {
 		/new(?![\p{ID_Continue}_$])\s*/yu, stack => (stack[stack.length-1] = patterns.afterExpression, stack.push(patterns.type), styles.keyword),
 		/(class|extends)(?![\p{ID_Continue}_$])\s*/yu, stack => (stack.push(patterns.type), styles.modifier),
 		/\+\+|--/y, styles.base,
-		/(of|in)(?![\p{ID_Continue}_$])/yu, styles.keyword,
 		/(typeof|delete|var|let|const)(?![\p{ID_Continue}_$])/yu, styles.modifier,
 		/(this|super|null|true|false|undefined)(?![\p{ID_Continue}_$])/yu, styles.modifier,
 		/#?[\p{ID_Start}_$][\p{ID_Continue}_$]*(?=\s*[(`])/yu, stack => (stack[stack.length-1] = patterns.afterExpression, styles.method),
@@ -58,6 +57,7 @@ const styles = {
 	afterExpression: [
 		/\/\/[^\n]*|\/\*([^*]|\*(?!\/))*(\*\/|$)/y, styles.comment, '\v\f\t ', null,
 		/\+\+|--/y, styles.base,
+		/(of|in)(?![\p{ID_Continue}_$])/yu, stack => (stack[stack.length-1] = patterns.expectExpression, styles.keyword),
 		/[\(\[]/y, stack => (stack.push(patterns.expectExpression), styles.brackets[(stack.length-1)%styles.brackets.length]),
 		/[\)\]]/y, stack => (stack.pop(),styles.brackets[stack.length%styles.brackets.length]),
 		/`([^$`\\]|\\.|\$(?!{))*/y, stack => (stack.push(patterns.tstr), styles.string),
