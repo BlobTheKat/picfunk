@@ -70,7 +70,7 @@ function addFile(file, nm = file.name, opts = 0){
 		gl.generateMipmap(gl.TEXTURE_2D)
 		images.set(name, t)
 		sourcesContainer.insertBefore(n, uploadBtn)
-		code()
+		last = ''; code()
 	}
 	e.onclick = () => {
 		const repeat = e.classList.replace('repeat', 'repeat-mirror') ? 1 : e.classList.toggle('repeat-mirror') ? (e.classList.replace('repeat-mirror', 'repeat'), 0) : 2
@@ -97,7 +97,7 @@ function addFile(file, nm = file.name, opts = 0){
 		images.delete(name)
 		name = b.value = makeName(b.value)
 		images.set(name, t)
-		code()
+		last = ''; code()
 	}
 	c.onclick = () => {
 		n.remove()
@@ -106,7 +106,7 @@ function addFile(file, nm = file.name, opts = 0){
 		gl.activeTexture(gl.TEXTURE0+t.id)
 		gl.bindTexture(gl.TEXTURE_2D, null)
 		gl.deleteTexture(t)
-		code()
+		last = ''; code()
 	}
 	if(sourcesContainer.childElementCount > maxTextures) uploadBtn.hidden = true
 }
@@ -172,7 +172,7 @@ const annotations = {
 }
 let last = ''
 function code(){
-	if(tOrigin >= 0 && last == (last = code0.value)){ tOrigin = performance.now(); return }
+	if(last == (last = code0.value) && tOrigin >= 0){ tOrigin = performance.now(); return }
 	raf > 0 ? cancelAnimationFrame(raf) : raf < 0 && clearTimeout(raf)
 	code0.resetAllLineStyles()
 	const a = performance.now()
