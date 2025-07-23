@@ -170,8 +170,9 @@ const annotations = {
 	warn: CodeAreaStyle('background-color: #f908; color: white; backdrop-filter:blur(5px);--hover-padding:0.25lh'),
 	info: CodeAreaStyle('background-color: #8888; color: white; backdrop-filter:blur(5px);--hover-padding:0.25lh')
 }
-
+let last = ''
 function code(){
+	if(tOrigin >= 0 && last == (last = code0.value)){ tOrigin = performance.now(); return }
 	raf > 0 ? cancelAnimationFrame(raf) : raf < 0 && clearTimeout(raf)
 	code0.resetAllLineStyles()
 	const a = performance.now()
@@ -188,7 +189,7 @@ vec4 GL_main(vec2);
 void main(){GL_col=GL_main(GL_uv);}
 #define main GL_main
 #line 1
-`+code0.value)
+`+last)
 	gl.compileShader(fsh)
 	err = gl.getShaderInfoLog(fsh)
 	if(err){
