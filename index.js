@@ -315,10 +315,10 @@ const styles = {
 	macro: CodeAreaStyle(`color: #e39; font-style: italic`),
 	int: CodeAreaStyle(`color: #46f`),
 	float: CodeAreaStyle(`color: #73f`),
-	id: CodeAreaStyle(`color: #ccc`),
-	symbols: CodeAreaStyle(`color: #fff`),
-	symbols2: CodeAreaStyle(`color: #999`),
-	comment: CodeAreaStyle(`color: #555`)
+	id: CodeAreaStyle(`color: var(--b); opacity: 0.8`),
+	symbols: CodeAreaStyle(`color: var(--b)`),
+	symbols2: CodeAreaStyle(`color: var(--b); opacity: 0.6`),
+	comment: CodeAreaStyle(`color: var(--b); opacity: 0.33`)
 }
 
 const macro = [
