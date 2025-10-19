@@ -353,7 +353,7 @@ code0.value = `// Scroll up for docs
 
 vec4 main(vec2 uv){
 	// Try editing this
-	vec4 color = texture(images.creo, uv);
+	vec4 color = texture(images.example, uv);
 	// Replace *= with = to see the original gradient
 	color *= vec4(uv.x, uv.x*uv.y*1.5, uv.y, 1);
 \t
@@ -491,8 +491,6 @@ fs.onclick = () => gl.canvas.requestFullscreen()
 fs.oncontextmenu = e => (e.preventDefault(), gl.canvas.requestFullscreen().then(() => {
 	setsize(gl.canvas.offsetWidth * devicePixelRatio, gl.canvas.offsetHeight * devicePixelRatio)
 }))
-
-fetch('./creo.webp').then(a=>a.blob()).then(a => addFile(a,'creo'))
 
 const toBlobFormats = {
 	__proto__: null,
@@ -673,9 +671,7 @@ function parsePfFileContents(buf, blob, off = 0){
 	return ''
 }
 
-uploadInput2.onchange = () => {
-	const f = uploadInput2.files[0]
-	uploadInput2.value = ''
+const loadFile = f => {
 	const err = v => { toast('Not a valid .pf file: '+v, '#f00') }
 	if(f.size < 8) return err('too small for 8-byte header')
 	rd.onload = () => {
@@ -693,6 +689,13 @@ uploadInput2.onchange = () => {
 	rd.onerror = () => { rd.onload = null; err('FileReader error') }
 	rd.readAsArrayBuffer(f.slice(0, 8))
 }
+
+fetch(location.search.slice(1) || './example.webp').then(r => {
+	r.blob().then(
+		r.headers.get('content-type').startsWith('image/') ? a => addFile(a,'example') : loadFile)
+}).catch(err => toast(err, '#f00'))
+
+uploadInput2.onchange = () => { loadFile(uploadInput2.files[0]); uploadInput2.value = '' }
 const formats = ['PNG', 'JPEG', 'WEBP', 'GIF', 'WEBM']
 $('#save').onclick = () => {
 	const res = [helper], res2 = [], ff = helper.subarray(0,1)
