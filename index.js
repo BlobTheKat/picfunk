@@ -690,7 +690,7 @@ const loadFile = f => {
 	rd.readAsArrayBuffer(f.slice(0, 8))
 }
 
-fetch(location.search.slice(1) || './example.webp').then(r => {
+fetch(location.search.slice(1) || './creo.webp').then(r => {
 	r.blob().then(
 		r.headers.get('content-type').startsWith('image/') ? a => addFile(a,'example') : loadFile)
 }).catch(err => toast(err, '#f00'))
