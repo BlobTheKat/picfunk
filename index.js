@@ -1,3 +1,4 @@
+
 const $ = document.querySelector.bind(document)
 const texTemplate = $('.tex'), sourcesContainer = $('#sources')
 
@@ -270,7 +271,7 @@ function drawTime(dt){
 	mspf.textContent = mspfAvg.toFixed(2).slice(mspfAvg<=.995)+'ms'
 }
 let raf = 0
-let overdraw = 0
+let drawIter = 1
 function draw(_time){
 	if(tOrigin < 0) return
 	gl.uniform2i(isizeLoc, gl.canvas.width, gl.canvas.height)
@@ -284,7 +285,7 @@ function draw(_time){
 			drawTime(gl.getQueryParameter(q, gl.QUERY_RESULT)/1000000)
 	}
 	if(TIME_ELAPSED_EXT) gl.beginQuery(TIME_ELAPSED_EXT, q)
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 2+(drawIter<<1))
 	if(TIME_ELAPSED_EXT) gl.endQuery(TIME_ELAPSED_EXT)
 	if(!tLoc){
 		let tries = 5
@@ -304,7 +305,7 @@ function quickdraw1(){
 }
 function quickdraw2(t){
 	gl.uniform1f(tLoc, t)
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4+(overdraw<<1))
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 2+(drawIter<<1))
 }
 onbeforeunload = () => true
 
@@ -437,30 +438,43 @@ iT.parentElement.onclick = e => {e.target != iT && iT.focus()}
 iF.parentElement.onclick = e => {e.target != iF && iF.focus()}
 iT.oninput(); iF.oninput()
 
-const format = $('#format'), quality = $('#quality'), gifDitherSel = $('#gifdither'), gifRepeatSel = $('#gifrepeat')
+const format = $('#format'), quality = $('#quality'), gifDitherSel = $('#gifdither'), gifRepeatSel = $('#gifrepeat'), bitrate = $('#bitrate')
 let oldToast = null
-let expQuality = 1, expFormat = 'PNG', gifDither = false, gifRepeat = 0
-format.onclick = () => {
-	const t = format.textContent
-	expFormat = t == 'PNG' ? 'JPEG' : t == 'JPEG' ? 'WEBP' : t == 'WEBP' ? 'GIF' : 'PNG'
-	format.textContent = expFormat
+let expQuality = 1, expBitrate = 1, expFormat = 'PNG', gifDither = false, gifRepeat = 0
+function setExpFormat(f){
+	format.textContent = expFormat = f
 	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
-	quality.style.display = expFormat == 'PNG' ? 'none' : ''
+	quality.style.display = expFormat == 'PNG' || expFormat == 'WEBM' ? 'none' : ''
+	bitrate.style.display = expFormat == 'WEBM' ? '' : 'none'
 	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
 		expFormat == 'GIF' ? 'flex' : 'none'
+}
+format.onclick = () => {
+	const t = expFormat
+	setExpFormat(t == 'PNG' ? 'JPEG' : t == 'JPEG' ? 'WEBP' : t == 'WEBP' ? 'GIF' : t == 'GIF' ? 'WEBM' : 'PNG')
 	oldToast && oldToast.remove()
 	oldToast = toast('Export format: '+expFormat, '#f08')
 }
-quality.ontouchstart = e => e.preventDefault()
-quality.onpointerdown = e => quality.setPointerCapture(e.pointerId)
-quality.onpointerup = e => quality.releasePointerCapture(e.pointerId)
-quality.onpointermove = e => {
-	if(!quality.hasPointerCapture(e.pointerId)) return
-	e.preventDefault()
-	expQuality = Math.min(1, Math.max(0, e.layerX / quality.offsetWidth))
-	quality.style.setProperty('--q', (expQuality*100).toFixed(2)+'%')
-	quality.textContent = 'Quality: '+Math.round(expQuality*100)+'%'
+function slider(n, cb){
+	n.ontouchstart = e => e.preventDefault()
+	n.onpointerdown = e => n.setPointerCapture(e.pointerId)
+	n.onpointerup = e => n.releasePointerCapture(e.pointerId)
+	n.onpointermove = e => {
+		if(!n.hasPointerCapture(e.pointerId)) return
+		e.preventDefault()
+		const v = Math.min(1, Math.max(0, e.layerX / n.offsetWidth))
+		
+		n.style.setProperty('--q', (v*100).toFixed(2)+'%')
+		n.textContent = cb(v)
+	}
 }
+slider(quality, v => 'Quality: '+Math.round((expQuality=v)*100)+'%')
+slider(bitrate, v => {
+	if((expBitrate=v)==1) return 'Bitrate: MAX'
+	const bps = Math.round(5e4*1e3**v)
+	return 'Bitrate: '+(bps<1e6 ? (bps/1000).toFixed(0)+'K' : (bps/1e6).toFixed(bps<1e7?2:1)+'M')+'bps'
+})
+
 const dithers = [false, 'Atkinson', 'Atkinson-serpentine', 'FalseFloydSteinberg', 'FalseFloydSteinberg-serpentine', 'FloydSteinberg', 'FloydSteinberg-serpentine', 'Stucki', 'Stucki-serpentine']
 const ditherTexts = ['None', 'Atkinson', 'Atkinson-S', 'FalseFS', 'FalseFS-S', 'FS', 'FS-S', 'Stucki', 'Stucki-S']
 gifDitherSel.onclick = () => {
@@ -487,10 +501,10 @@ const toBlobFormats = {
 	'WEBP': 'image/webp',
 }
 const GIF_MAGIC = .0471012869725
-function download(method = saveBlob){
+async function download(method = saveBlob){
 	draw()
-	const f = toBlobFormats[format.textContent]
-	if(!f){
+	const f = toBlobFormats[expFormat]
+	if(!f) if(expFormat == 'GIF'){
 		// GIF
 		const g = new GIF({
 			workers: navigator.hardwareConcurrency || 4,
@@ -520,9 +534,45 @@ function download(method = saveBlob){
 		}
 		g.render()
 		draw()
-		return
+	}else{
+		// Video
+		const basic = {
+			width: gl.canvas.width, height: gl.canvas.height,
+			bitrate: Math.round(5e4*1e3**expBitrate),
+			framerate: interval ? 1000/interval : 60
+		}
+		const options = [
+			{ ...basic, codec: 'av1', mcodec: 'AV1' },
+			{ ...basic, codec: 'vp8', mcodec: 'V_VP8' },
+			{ ...basic, codec: 'vp8', mcodec: 'V_VP8', bitrate: undefined },
+		]
+		const c = options[await Promise.all(options.map(VideoEncoder.isConfigSupported)).then(o => o.findIndex(a=>a.supported))]
+		const enc = new VideoEncoder({
+			output: (a, b) => muxer.addVideoChunk(a, b),
+			error(e){
+				toast('VideoCodec failed: ' + e.message, '#f00')
+			}
+		})
+		if(!c) return toast('VideoCodec: No known supported codecs', '#f00')
+		enc.configure(c)
+		c.codec = c.mcodec
+		const muxer = new WebMMuxer.Muxer({
+			target: new WebMMuxer.ArrayBufferTarget(),
+			video: c
+		})
+		quickdraw1()
+		const end = tLoc ? maxTime || 1 : 1e-308, step = interval || .05/3
+		for(let t = 0; t < end; t += step){
+			quickdraw2(t)
+			const v = new VideoFrame(gl.canvas, {timestamp: t*1e6})
+			enc.encode(v)
+			v.close()
+		}
+		await enc.flush()
+		muxer.finalize()
+		method(new Blob([muxer.target.buffer], {type: 'video/webm'}))
 	}
-	gl.canvas.toBlob(b => method(b), f, expQuality)
+	else gl.canvas.toBlob(b => method(b), f, expQuality)
 }
 
 function saveBlob(a, name = 'picfunk-output'){
@@ -596,20 +646,17 @@ function parsePfFileContents(buf, blob, off = 0){
 	iF.value = block.getFloat32(8) || ''; iF.onchange()
 	iT.oninput(); iF.oninput()
 	const fi = block.getUint8(12)
-	expFormat = fi < formats.length ? formats[fi] : 'GIF'
-	format.textContent = expFormat
-	format.style.fontSize = expFormat.length > 3 ? '8px' : ''
-	quality.style.display = expFormat == 'PNG' ? 'none' : ''
-	gifDitherSel.style.display = gifRepeatSel.parentElement.style.display =
-		expFormat == 'GIF' ? 'flex' : 'none'
+	setExpFormat(fi < formats.length ? formats[fi] : 'GIF')
 	gifRepeat = block.getUint16(14)+1
 	if(expFormat == 'GIF'){
-		gifDither = dithers[fi>>1^127]
-		gifDitherSel.textContent = 'Dither: ' + ditherTexts[fi>>1^127]
+		gifDither = dithers[~fi>>1&127]
+		gifDitherSel.textContent = 'Dither: ' + ditherTexts[~fi>>1&127]
 		if(fi&1) gifRepeat = 0
 	}else gifRepeat = 0
 	gifRepeatSel.value = gifRepeat
 	expQuality = block.getUint8(13)/255
+	if(expFormat == 'WEBM') expBitrate = expQuality, expQuality = 1
+	else expBitrate = 1
 	quality.style.setProperty('--q', (expQuality*100).toFixed(2)+'%')
 	quality.textContent = 'Quality: '+Math.round(expQuality*100)+'%'
 	tOrigin = performance.now()
@@ -646,7 +693,7 @@ uploadInput2.onchange = () => {
 	rd.onerror = () => { rd.onload = null; err('FileReader error') }
 	rd.readAsArrayBuffer(f.slice(0, 8))
 }
-const formats = ['PNG', 'JPEG', 'WEBP']
+const formats = ['PNG', 'JPEG', 'WEBP', 'GIF', 'WEBM']
 $('#save').onclick = () => {
 	const res = [helper], res2 = [], ff = helper.subarray(0,1)
 	let sz = 0
@@ -665,9 +712,8 @@ $('#save').onclick = () => {
 	block.setUint16(2, gl.canvas.height-1)
 	block.setFloat32(4, maxTime)
 	block.setFloat32(8, +iF.value || 0)
-	const fi = formats.indexOf(expFormat)
-	block.setUint8(12, fi >= 0 ? fi : ~dithers.indexOf(gifDither)<<1|!gifRepeat)
-	block.setUint8(13, Math.round(expQuality*255))
+	block.setUint8(12, expFormat == 'GIF' ? ~dithers.indexOf(gifDither)<<1|!gifRepeat : formats.indexOf(expFormat))
+	block.setUint8(13, Math.round((expFormat == 'WEBM' ? expBitrate : expQuality)*255))
 	block.setUint16(14, gifRepeat-1)
 	const code = enc.encode(code0.value)
 	res.push(ff, block.buffer, ff, code, ff); sz += code.length + 19

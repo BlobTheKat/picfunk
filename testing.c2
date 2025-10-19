@@ -1,0 +1,85 @@
+
+// C2, a dialect (not really) of C where things are done RIGHT
+// Standardization is significantly stricter
+// Much stronger compiletime logic
+// Far fewer restrictions and caveats allowing new paradigms to be used directly
+// Learning C2 from C or porting from C to C2 is designed to not be hard
+
+// Primitive types, on top of which all types are constructed
+void; // -> monostate. Actually a complete type, but mostly conceptual and not useful run-time. sizeof() == 0
+bool; // -> boolean (= ubyte + sugar)
+char; // -> character type (= ubyte + sugar)
+byte;  ubyte; // -> 8 bit integer
+short; ushort; // -> 16 bit integer
+int;   uint; // -> 32 bit integer
+long;  ulong; // -> 64 bit integer
+isize; usize; // -> Size of a pointer
+hfloat; // -> 16 bit IEEE-754 float
+float; // -> 32 bit IEEE-754 float
+double; // -> 64 bit IEEE-754 float
+
+
+// struct = Memory layout according to forward-packing algorithm
+// Start at offset 0
+// Place a type of size S and alignment A:
+// Jump to the very next A-multiple offset and place the membeer here
+// Increment offset by S
+// struct guarantees that the object is representable in memory
+// struct's size is the final offset, rounded up to nearest struct alignment
+// struct's alignment is the lcm of all of its members' alignments
+
+// union = Memory layout specified by the user
+// By default, all members are at the same offset as the previous member, with the first member being 0
+// It is illegal (and an error should be thrown as soon as detectable) to specify an offset for a member that is not an multiple of its alignment
+// union's size is the maximum of all of its members' size+offset, rounded up to nearest union alignment
+// union's alignment is the lcm of all of its members' alignments
+
+// const = static, you already know this.
+
+struct IAnimal{
+	void makeSound(void&);
+}
+
+struct Animal{
+	IAnimal ...impl {
+		void makeSound(Animal& this){
+			stdout.write("Some generic animal sound\n");
+		}
+	}
+}
+struct Dog{
+	Animal;
+	impl {
+		void makeSound(Dog& this){
+			stdout.write("Woof! Woof!\n");
+		}
+	}
+}
+struct Cat{
+	Animal;
+	impl {
+		void makeSound(Cat& this){
+			stdout.write("Meow!\n");
+		}
+	}
+}
+
+int main() {
+	// Base struct reference
+	Animal& base;
+
+	Dog d;
+	// Downcast my ass (downcasting in C2 is called swizzling erasure)
+	&base = d;
+	base->makeSound();  // → "Woof! Woof!"
+
+	Cat c;
+	&base = c;
+	base->makeSound();  // → "Meow!"
+
+	Animal a;
+	&base = a;
+	base->makeSound();  // → "Some generic animal sound"
+
+	return 0;
+}

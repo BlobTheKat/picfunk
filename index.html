@@ -223,12 +223,12 @@
 			width: 100%;
 			padding: 4px;
 		}
-		#quality{
+		#quality, #bitrate{
 			position: relative;
 			text-align: center;
 			cursor: text;
 		}
-		#quality::before{
+		#quality::before, #bitrate::before{
 			content: '';
 			position: absolute;
 			top: 0; left: 0;
@@ -423,6 +423,7 @@
 			<div id="format" title="Export format">PNG</div>
 			<div id="formatopts">
 				<div id="quality" style="display: none;--q: 100%">Quality: 100%</div>
+				<div id="bitrate" style="display: none;--q: 100%">Bitrate: MAX</div>
 				<div id="gifdither" style="cursor: pointer;display:none">Dither: None</div>
 				<div style="display:none;gap:5px">Repeat: <input id="gifrepeat" placeholder="Forever" /></div>
 			</div>
@@ -439,5 +440,6 @@
 	</div>
 </body>
 <script src="./gif.js"></script>
+<script src="./webm-muxer.js"></script>
 <script src="index.js"></script>
 </html>

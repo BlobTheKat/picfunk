@@ -1,0 +1,33 @@
+{
+	"configurations": [
+		{
+		"name": "default",
+			"defines": [
+				"ubyte=unsigned char",
+				"byte=signed char",
+				"ushort=unsigned short",
+				"_short=short",
+				"uint=unsigned int",
+				"_int=int",
+				"usize=unsigned long",
+				"isize=long",
+				"long=long long",
+				"ulong=unsigned long",
+				"type=int",
+				"bool=char",
+				"hfloat=float",
+				"null=0",
+				"sizeof=",
+				"alignof=",
+				"extend=struct",
+				"String=char*",
+				"swizzle=struct"
+			],
+			"intelliSenseMode": "macos-clang-arm64",
+			"compilerPath": "/opt/homebrew/opt/llvm/bin/clang",
+			"cStandard": "c17",
+			"cppStandard": "c++20"
+		}
+	],
+	"version": 4
+}
