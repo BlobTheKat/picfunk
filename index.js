@@ -39,7 +39,6 @@ function clearFiles(refresh){
 	uploadBtn.hidden = false
 	if(refresh) code()
 }
-
 function addFile(file, nm = file.name, opts = 0){
 	if(sourcesContainer.childElementCount > maxTextures) return toast('Maximum number of textures reached ('+maxTextures+')', '#ff0')
 	if(file.name && !file.type.startsWith('image/')) return toast("Not an image: " + extOf(file), '#f00')
@@ -73,6 +72,10 @@ function addFile(file, nm = file.name, opts = 0){
 		sourcesContainer.insertBefore(n, uploadBtn)
 		last = ''; code()
 	}
+	
+	const mx = opts>>1&3, my = opts>>3&3
+	if(mx) mx==1 ? e.classList.replace('repeat', 'repeat-mirror') : e.classList.remove('repeat')
+	if(my) my==1 ? f.classList.replace('repeat', 'repeat-mirror') : f.classList.remove('repeat')
 	e.onclick = () => {
 		const repeat = e.classList.replace('repeat', 'repeat-mirror') ? 1 : e.classList.toggle('repeat-mirror') ? (e.classList.replace('repeat-mirror', 'repeat'), 0) : 2
 		t.opts = t.opts&~6|repeat<<1
@@ -87,6 +90,7 @@ function addFile(file, nm = file.name, opts = 0){
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, repeat == 2 ? gl.CLAMP_TO_EDGE : repeat ? gl.MIRRORED_REPEAT : gl.REPEAT)
 		if(!tLoc) draw()
 	}
+	if(opts&1) g.classList.remove('linear')
 	g.onclick = () => {
 		const linear = g.classList.toggle('linear')
 		t.opts = t.opts&~1|!linear
