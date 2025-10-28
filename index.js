@@ -527,7 +527,7 @@ async function download(method = saveBlob){
 			progress.onclick = null
 		})
 		const opts = {copy:true, delay: interval || 33.333}
-		const step = interval ? interval*.001 : .033333
+		const step = interval*.001 || .1/3
 		quickdraw1()
 		const end = tLoc ? maxTime || 1 : 1e-308
 		for(let t = 0; t < end; t += step){
@@ -563,7 +563,7 @@ async function download(method = saveBlob){
 			video: c
 		})
 		quickdraw1()
-		const end = tLoc ? maxTime || 1 : 1e-308, step = interval || .05/3
+		const end = tLoc ? maxTime || 1 : 1e-308, step = interval*.001 || .05/3
 		for(let t = 0; t < end; t += step){
 			quickdraw2(t)
 			const v = new VideoFrame(gl.canvas, {timestamp: t*1e6})
