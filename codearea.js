@@ -4,8 +4,8 @@
 	gsheet.insertRule(`code-area{user-select:none !important;-webkit-user-select:none !important;position:relative !important;tab-size:2;box-sizing:border-box !important;-webkit-tap-highlight-color:#0000 !important;text-size-adjust: none !important;-webkit-text-size-adjust: none !important;touch-action: pan-y !important;display:grid !important;white-space:pre-wrap !important;font-family:monospace;overflow:auto !important;overflow-wrap:break-word !important;word-wrap:break-word !important;line-height:1.2;scrollbar-width:0;--max-line-width:100%;grid-template-columns:minmax(auto,var(--max-line-width));--min-gutter:0}`, 0)
 	gsheet.insertRule('code-area::-webkit-scrollbar{display: none}', 1)
 	document.adoptedStyleSheets.push(gsheet)
-	sheet.insertRule('textarea{z-index:1;padding:0;padding-left:max(1ch,var(--min-gutter) * 1ch);margin:0;inset:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#999;white-space:pre-wrap;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;text-size-adjust: none;-webkit-text-size-adjust: none;overflow-wrap:inherit;word-wrap:inherit;touch-action:pan-y;overflow:clip;grid-area:1/1}', 0)
-	sheet.insertRule('::selection{background:var(--selection,#8888);}',1)
+	sheet.insertRule('textarea{--highlight:#8888;z-index:1;padding:0;padding-left:max(1ch,var(--min-gutter) * 1ch);margin:0;inset:0;border:none;outline:none;background:none;font:inherit;color:#0000;resize:none;caret-color:#999;white-space:pre-wrap;tab-size:inherit;box-sizing:border-box;-webkit-tap-highlight-color:#0000;text-size-adjust: none;-webkit-text-size-adjust: none;overflow-wrap:inherit;word-wrap:inherit;touch-action:pan-y;overflow:clip;grid-area:1/1}', 0)
+	sheet.insertRule('::selection{background:var(--highlight);}',1)
 	sheet.insertRule('div{min-height:1lh}',2)
 	sheet.insertRule('label{box-sizing:border-box;position:absolute;left:0;width:calc(var(--g) + 0.25lh);display:block;white-space:pre;color:#808080;padding-right:0.25lh;clip-path:polygon(0 0, calc(100% - 0.25lh) 0, 100% 50%, calc(100% - 0.25lh) 100%, 0 100%);z-index:2;cursor:pointer;counter-increment:l}',3)
 	sheet.insertRule('label::before{content:counter(l);display:inline-block;width:var(--g);text-align:right}',4)
@@ -35,8 +35,8 @@
 			this.#el.style.counterReset = 'l '+(this.#firstLine-1)
 		}
 		get visibleLineCount(){ return this.#el.childNodes.length*.5 }
-		get highlightColor(){ return this.#el.style.getPropertyValue('--highlight')??'#8888' }
-		set highlightColor(a){ return this.#el.style.setProperty('--highlight', a) }
+		get highlightColor(){ return this.#textarea.style.getPropertyValue('--highlight')??'#8888' }
+		set highlightColor(a){ return this.#textarea.style.setProperty('--highlight', a) }
 		get defaultLineStyle(){ return this.#lineStyle2 }
 		set defaultLineStyle(cl){
 			const old = this.#lineStyle
