@@ -22,7 +22,7 @@ const def = [
 	/(true|false)(?!\w)|(\d+[bsilxBSILX]?|0x[0-9a-fA-F]+|0b[01]+|0o[0-7]+|(\d+\.\d*|\.\d+)(e[+-]?\d*)?[hfdHFD]?)(?![\.\w])/yi, styles.int,
 	/`([^`\\]|\\[^])*(`|$)|"([^"\\]|\\[^])*("|$)|'([^'\\]|\\.)/yi, styles.str,
 	/([A-Z][a-zA-Z0-9_]*|void|char|(?:bool|u?(byte|short|int|x?long)|[ui]size|h?float|double)[234]?)(?!\w)/y, styles.types,
-	/(if|else|while|for|const|union|struct|return|break|continue|goto|do|while|switch|case|default|sizeof|alignof|swizzle)(?!\w)/y, styles.keyword,
+	/(if|else|while|for|const|union|struct|return|break|continue|goto|do|while|switch|case|default|sizeof|alignof|export|import|let|defer)(?!\w)/y, styles.keyword,
 	/[()[\]!%^&*:<>,/?|~\-=+]+/y, styles.symbols,
 	/[;.{}]/y, styles.symbols2,
 	/\w+/y, styles.id,
